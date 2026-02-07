@@ -86,18 +86,10 @@ export default function Layout({ children }: LayoutProps) {
       <aside className={`bg-slate-900 text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} flex flex-col shadow-xl`}>
         {/* Logo */}
         <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center justify-between">
+          <div className={`flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
             {sidebarOpen && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left duration-500">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-1.5 shadow-lg">
-                  <img src="/vk-logo.png" alt="VK Logo" className="w-full h-full object-contain animate-spin-slow" />
-                </div>
-                <h1 className="text-xl font-bold text-green-400 bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">VK INFO TECH</h1>
-              </div>
-            )}
-            {!sidebarOpen && (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-1.5 shadow-lg mx-auto">
-                <img src="/vk-logo.png" alt="VK Logo" className="w-full h-full object-contain animate-spin-slow" />
+              <div className="flex flex-col animate-in fade-in slide-in-from-left duration-500">
+                <h1 className="text-2xl font-bold text-green-400 bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">VK INFO TECH</h1>
               </div>
             )}
             <button
@@ -157,11 +149,11 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex-1"></div>
 
             {/* Centered Company Name */}
-            <div className="flex-1 flex justify-center items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-2 shadow-lg">
+            <div className="flex-1 flex justify-center items-center gap-4">
+              <div className="w-14 h-14 rounded-full p-2 flex items-center justify-center">
                 <img src="/vk-logo.png" alt="VK Logo" className="w-full h-full object-contain" />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">VKINFOTECH</h1>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">VKINFOTECH</h1>
             </div>
 
             {/* Right Side - Profile */}

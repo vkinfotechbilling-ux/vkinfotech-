@@ -20,6 +20,7 @@ export interface InvoiceData {
     products: InvoiceProduct[];
     subTotal: number;
     gstRate: number;
+    totalGst: number;
     cgst: number;
     sgst: number;
     roundOff: number;
@@ -45,6 +46,8 @@ export interface CompanyDetails {
     upiId: string;
     terms?: string;
     qrCode?: string;
+    bankHolder?: string;
+    logo?: string;
 }
 
 export interface Invoice {

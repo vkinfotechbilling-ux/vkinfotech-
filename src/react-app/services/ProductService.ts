@@ -6,7 +6,6 @@ export interface Product {
     category: string;
     description: string;
     price: number;
-    gst: number;
     stock: number;
     minStock: number;
     unit: string;
@@ -17,83 +16,7 @@ export interface Product {
 
 class ProductService {
     private STORAGE_KEY = 'products';
-    private defaultProducts: Product[] = [
-        {
-            id: 'P001',
-            name: 'Samsung LED TV 43"',
-            brand: 'Samsung',
-            category: 'Electronics',
-            description: '43 inch Full HD LED TV',
-            price: 32000,
-            gst: 18,
-            stock: 12,
-            minStock: 5,
-            unit: 'pcs',
-            status: 'Active',
-            createdAt: '2024-01-15',
-            updatedAt: '2024-01-20'
-        },
-        {
-            id: 'P002',
-            name: 'iPhone 15 Pro',
-            brand: 'Apple',
-            category: 'Mobile',
-            description: '256GB, Titanium',
-            price: 129000,
-            gst: 18,
-            stock: 3,
-            minStock: 5,
-            unit: 'pcs',
-            status: 'Active',
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-22'
-        },
-        {
-            id: 'P003',
-            name: 'HP Laptop i5',
-            brand: 'HP',
-            category: 'Computers',
-            description: 'Intel Core i5, 8GB RAM, 512GB SSD',
-            price: 45000,
-            gst: 18,
-            stock: 8,
-            minStock: 3,
-            unit: 'pcs',
-            status: 'Active',
-            createdAt: '2024-01-12',
-            updatedAt: '2024-01-18'
-        },
-        {
-            id: 'P004',
-            name: 'Sony Headphones',
-            brand: 'Sony',
-            category: 'Audio',
-            description: 'Wireless Noise Cancelling',
-            price: 3500,
-            gst: 18,
-            stock: 0,
-            minStock: 10,
-            unit: 'pcs',
-            status: 'Active',
-            createdAt: '2024-01-08',
-            updatedAt: '2024-01-25'
-        },
-        {
-            id: 'P005',
-            name: 'Dell Monitor 27"',
-            brand: 'Dell',
-            category: 'Computers',
-            description: '27 inch QHD Monitor',
-            price: 18000,
-            gst: 18,
-            stock: 15,
-            minStock: 5,
-            unit: 'pcs',
-            status: 'Active',
-            createdAt: '2024-01-05',
-            updatedAt: '2024-01-20'
-        }
-    ];
+    private defaultProducts: Product[] = [];
 
     constructor() {
         this.initialize();

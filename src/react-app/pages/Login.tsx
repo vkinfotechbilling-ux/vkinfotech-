@@ -29,9 +29,12 @@ export default function Login() {
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="bg-gradient-to-r from-green-600 to-blue-600 p-8 text-center text-white">
-                    <h1 className="text-3xl font-bold mb-2">VK Info TECH</h1>
-                    <p className="opacity-90">Billing System Login</p>
+                <div className="bg-gradient-to-r from-green-600 to-blue-600 p-8 text-center text-white flex flex-col items-center">
+                    <div className="w-20 h-20 mb-4 flex items-center justify-center">
+                        <img src="/vk-logo.png" alt="VK Logo" className="w-full h-full object-contain" />
+                    </div>
+                    <h1 className="text-4xl font-bold mb-2 tracking-tight">VKINFOTECH</h1>
+                    <p className="opacity-90 font-medium">Billing & Inventory System Login</p>
                 </div>
 
                 <div className="p-8">
@@ -83,9 +86,8 @@ export default function Login() {
                             Sign In
                         </button>
 
-                        <div className="text-center text-xs text-gray-500 mt-4">
-                            <p>Default Admin: VKINFOTECH / VKINFOTECH123</p>
-                            <p>Default Staff: VK INFOTECHSTAFF / VKINFOTECHSTAFF123</p>
+                        <div className="text-center text-xs text-gray-400 mt-4">
+                            <p>© 2026 VKINFOTECH. All rights reserved.</p>
                         </div>
                     </form>
                 </div>

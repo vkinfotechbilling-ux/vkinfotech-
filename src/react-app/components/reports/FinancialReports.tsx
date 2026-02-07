@@ -10,7 +10,7 @@ export default function FinancialReports() {
     }, []);
 
     const pieData = [
-        { name: 'Net Revenue', value: financials.netRevenue, color: '#4ade80' },
+        { name: 'Net Revenue', value: financials.netRevenue, color: '#22c55e' },
         { name: 'GST Collected', value: financials.totalGST, color: '#f87171' },
     ];
 

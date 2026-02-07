@@ -1,74 +1,169 @@
-import { createRoot } from 'react-dom/client';
-import InvoiceTemplate from './InvoiceTemplate';
 import { CompanyDetails, InvoiceData } from '../../types';
-import { flushSync } from 'react-dom';
 
-export const handlePrintInvoice = (company: CompanyDetails, data: InvoiceData) => {
-    // Create a hidden iframe for printing
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
+/**
+ * Prepares a wrapper containing cloned visible invoice pages for printing or PDF.
+ * Strategy: Capture the ALREADY RENDERED React output to ensure WYSIWYG fidelity.
+ */
+const prepareVisibleInvoiceDOM = (): HTMLElement => {
+    // 1. Find the main anchor element (Page 1)
+    const originalInvoice = document.getElementById('invoice');
+    if (!originalInvoice) throw new Error('Invoice visible template (#invoice) not found in DOM');
 
-    const doc = iframe.contentWindow?.document;
-    if (!doc) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'invoice-print-wrapper';
+    wrapper.style.width = '210mm';
+    wrapper.style.margin = '0 auto';
 
-    // Write base HTML with styles
-    doc.open();
-    doc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Invoice - ${data.invoiceNumber}</title>
-            <script src="https://cdn.tailwindcss.com"></script>
-            <style>
-                @page { size: A4; margin: 0; }
-                body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-            </style>
-        </head>
-        <body>
-            <div id="print-root"></div>
-        </body>
-        </html>
-    `);
-    doc.close();
+    // 2. Identify all invoice pages
+    // Since React renders sibling divs for pages, we look at the parent or siblings
+    const parentCtx = originalInvoice.parentElement;
+    let pages: Element[] = [];
 
-    // Render the React Template into the iframe
-    // Use setTimeout to ensure Tailwind loads (simplest way without complex build pipeline integration for iframe)
-    // A better way in production is to copy the <style> tags from the main document to this iframe.
+    if (parentCtx) {
+        // robustly select all invoice page blocks
+        const allCandidates = parentCtx.querySelectorAll('div[id^="invoice"]');
+        if (allCandidates.length > 0) {
+            pages = Array.from(allCandidates);
+        } else {
+            pages = [originalInvoice];
+        }
+    } else {
+        pages = [originalInvoice];
+    }
 
-    // Copy styles from main window to iframe
-    const styleTags = document.querySelectorAll('style, link[rel="stylesheet"]');
-    styleTags.forEach(tag => {
-        doc.head.appendChild(tag.cloneNode(true));
+    // 3. Clone and Sanitize
+    pages.forEach((page, index) => {
+        const pageClone = page.cloneNode(true) as HTMLElement;
+
+        // Ensure Strict CSS Visibility for the clone
+        pageClone.style.display = 'block';
+        pageClone.style.visibility = 'visible';
+        pageClone.style.opacity = '1';
+        pageClone.style.transform = 'none';
+        pageClone.style.overflow = 'visible';
+
+        // Ensure background is white
+        pageClone.style.backgroundColor = '#ffffff';
+
+        // Add Page Break
+        if (index < pages.length - 1) {
+            // margin for visual separation in preview, but meaningless for canvas capture of individual pages
+            pageClone.style.marginBottom = '20px';
+        }
+
+        // Clean up interactive elements (Buttons, Icons)
+        // Remove buttons and elements marked to be hidden in print
+        const buttons = pageClone.querySelectorAll('button, [role="button"], .print\\:hidden');
+        buttons.forEach(el => el.remove());
+
+        // Convert Inputs/Selects/Textareas to Static Text
+        pageClone.querySelectorAll('input, select, textarea').forEach(el => {
+            let val = '';
+            // Try to find the live element by ID for hydration
+            if (el.id) {
+                const liveEl = document.getElementById(el.id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+                if (liveEl) val = liveEl.value;
+            } else {
+                val = (el as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
+            }
+
+            const span = document.createElement('span');
+            span.textContent = val;
+            span.style.whiteSpace = 'pre-wrap'; // Preserve formatting for textareas
+            if (val) span.style.color = '#000000'; // Ensure visibility
+
+            // basic styling copy
+            span.style.fontFamily = 'inherit';
+            span.style.fontWeight = 'bold';
+
+            el.parentElement?.replaceChild(span, el);
+        });
+
+        wrapper.appendChild(pageClone);
     });
 
-    const root = createRoot(doc.getElementById('print-root')!);
+    return wrapper;
+};
 
-    // We flushSync to ensure render happens before we try to print
-    flushSync(() => {
-        root.render(<InvoiceTemplate company={company} data={data} />);
-    });
+export const handlePrintInvoice = (_company: CompanyDetails, _data: InvoiceData) => {
+    window.print();
+};
 
-    // Wait for images/styles to load then print
-    iframe.onload = () => {
-        setTimeout(() => {
-            iframe.contentWindow?.print();
-            // Cleanup after print dialog usage (approximate, since print blocks execution in most browsers)
-            // But removing immediately might break it in some browsers if not catching the event.
-            // Safe to leave or remove on next action.
-            // document.body.removeChild(iframe); 
-        }, 500);
-    };
+export const generateInvoicePDF = async (_company: CompanyDetails, data: InvoiceData) => {
+    // Import dependencies directly
+    // @ts-ignore
+    const html2canvas = (await import('html2canvas')).default;
+    // @ts-ignore
+    const { jsPDF } = await import('jspdf');
 
-    // Fallback if onload doesn't trigger correctly or for safety
-    setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        // document.body.removeChild(iframe);
-    }, 1000);
+    let pagedDOM: HTMLElement;
+    try {
+        pagedDOM = prepareVisibleInvoiceDOM();
+    } catch (e) {
+        alert("Could not prepare invoice for PDF: " + e);
+        return;
+    }
+
+    const container = document.createElement('div');
+    container.id = 'invoice-pdf-capture-stage';
+
+    // Position visible but safe
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '9999';
+    container.style.backgroundColor = '#f0f0f0'; // Gray back to distinguish pages
+    container.style.width = '210mm';
+    container.style.padding = '0';
+    container.style.margin = '0';
+
+    document.body.appendChild(container);
+    container.appendChild(pagedDOM);
+
+    try {
+        // Wait for images
+        const images = Array.from(container.querySelectorAll('img'));
+        await Promise.all(images.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+        }));
+        // Safety delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = 210;
+
+        // Select the cloned pages
+        // Note: prepareVisibleInvoiceDOM appends page clones directly to wrapper
+        const pages = Array.from(pagedDOM.children) as HTMLElement[];
+
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+
+            // Capture the page
+            const canvas = await html2canvas(page, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                scrollX: 0,
+                scrollY: 0
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            if (i > 0) pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        }
+
+        pdf.save(`${data.customerName ? data.customerName.trim() : `Invoice_${data.invoiceNumber}`}.pdf`);
+
+    } catch (error) {
+        console.error("PDF Generation Error:", error);
+        alert("Failed to generate PDF. Check console.");
+    } finally {
+        document.body.removeChild(container);
+    }
 };

@@ -65,6 +65,12 @@ export default function Stock() {
   const [selectedProductHistory, setSelectedProductHistory] = useState<StockLog[]>([]);
   const [isUpdateSuccess, setIsUpdateSuccess] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
+
+  // Auth Modal State
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState(false);
 
   const [updateForm, setUpdateForm] = useState({
     updateType: 'IN' as 'IN' | 'OUT',
@@ -200,6 +206,7 @@ export default function Stock() {
       reason: '',
       remarks: ''
     });
+    setFormErrors({});
     setShowUpdateModal(true);
   };
 
@@ -210,25 +217,25 @@ export default function Stock() {
     setShowHistoryModal(true);
   };
 
-  const handleSaveStockUpdate = () => {
-    if (!selectedProduct || !updateForm.quantity || !updateForm.reason) {
-      alert('Please fill all required fields');
+  const handleInitiateUpdate = () => {
+    // Validation
+    const errors: Record<string, boolean> = {};
+    if (!updateForm.quantity) errors.quantity = true;
+    if (!updateForm.reason) errors.reason = true;
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+
+    if (!selectedProduct) return;
 
     const quantity = parseInt(updateForm.quantity);
     if (quantity <= 0) {
       alert('Quantity must be greater than 0');
       return;
     }
-
-    // Admin authentication check
-    const adminPassword = prompt('Admin authentication required. Enter admin password:');
-    if (!adminPassword) {
-      return;
-    }
-
-    // Calculate new stock
+    // Check negative stock
     const oldStock = selectedProduct.stock;
     const newStock = updateForm.updateType === 'IN'
       ? oldStock + quantity
@@ -239,8 +246,31 @@ export default function Stock() {
       return;
     }
 
+    setAuthPassword('');
+    setAuthError(false);
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSubmit = () => {
+    if (!authPassword) {
+      setAuthError(true);
+      return;
+    }
+    setShowAuthModal(false);
+    applyStockUpdate();
+  };
+
+
+  const applyStockUpdate = () => {
+    if (!selectedProduct) return;
+
+    const quantity = parseInt(updateForm.quantity);
+    const oldStock = selectedProduct.stock;
+    const newStock = updateForm.updateType === 'IN'
+      ? oldStock + quantity
+      : oldStock - quantity;
+
     // Update product stock
-    // Update product stock in service
     productService.updateProduct(selectedProduct.id, {
       stock: newStock,
       updatedAt: new Date().toLocaleString('en-IN')
@@ -262,7 +292,6 @@ export default function Stock() {
       dateTime: new Date().toLocaleString('en-IN')
     };
     stockService.addLog(newLog);
-    setStockLogs(stockService.getAllLogs()); // Refresh
 
     setStockLogs(stockService.getAllLogs()); // Refresh
 
@@ -273,7 +302,7 @@ export default function Stock() {
     setTimeout(() => {
       setIsUpdateSuccess(false);
       setShowUpdateModal(false);
-    }, 2000);
+    }, 1500);
   };
 
   const handleAutoReorder = (productId: string) => {
@@ -898,111 +927,137 @@ export default function Stock() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-gray-600 text-sm mb-2">Product</label>
-                <div className="font-bold text-gray-800 text-lg">{selectedProduct.name}</div>
-                <div className="text-gray-500 text-sm">Current Stock: {selectedProduct.stock} {selectedProduct.unit}</div>
+            {isUpdateSuccess ? (
+              <div className="p-12 flex flex-col items-center justify-center min-h-[400px]">
+                <div className="relative w-24 h-24 mb-6">
+                  <div className="absolute inset-0 border-4 border-green-500 rounded-full animate-[ping_1s_ease-out_infinite]"></div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-green-500 rounded-full animate-[bounce_0.5s_ease-out]">
+                    <CheckCircle size={48} className="text-white" />
+                  </div>
+                </div>
+                <h3 className="text-3xl font-black text-green-600 uppercase tracking-widest animate-pulse mb-2">
+                  Updated!
+                </h3>
+                <p className="text-gray-500 font-medium text-center">
+                  Stock successfully updated.<br />
+                  <span className="font-bold text-gray-800">
+                    {updateForm.updateType === 'IN' ? '+' : '-'}{updateForm.quantity} {selectedProduct.unit}
+                  </span>
+                </p>
               </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-gray-600 text-sm mb-2">Product</label>
+                  <div className="font-bold text-gray-800 text-lg">{selectedProduct.name}</div>
+                  <div className="text-gray-500 text-sm">Current Stock: {selectedProduct.stock} {selectedProduct.unit}</div>
+                </div>
 
-              <div>
-                <label className="block text-gray-600 text-sm mb-2">Update Type</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setUpdateForm({ ...updateForm, updateType: 'IN' })}
-                    className={`flex-1 py-2 rounded-lg font-semibold transition-all ${updateForm.updateType === 'IN'
-                      ? 'bg-green-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
+                <div>
+                  <label className="block text-gray-600 text-sm mb-2">Update Type</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setUpdateForm({ ...updateForm, updateType: 'IN' })}
+                      className={`flex-1 py-2 rounded-lg font-semibold transition-all ${updateForm.updateType === 'IN'
+                        ? 'bg-green-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                      STOCK IN (+)
+                    </button>
+                    <button
+                      onClick={() => setUpdateForm({ ...updateForm, updateType: 'OUT' })}
+                      className={`flex-1 py-2 rounded-lg font-semibold transition-all ${updateForm.updateType === 'OUT'
+                        ? 'bg-red-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                      STOCK OUT (-)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-600 text-sm mb-2">Quantity *</label>
+                  <input
+                    type="number"
+                    value={updateForm.quantity}
+                    onChange={(e) => {
+                      setUpdateForm({ ...updateForm, quantity: e.target.value });
+                      if (formErrors.quantity) setFormErrors({ ...formErrors, quantity: false });
+                    }}
+                    className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.quantity ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                    placeholder="Enter quantity"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-600 text-sm mb-2">Reason *</label>
+                  <select
+                    value={updateForm.reason}
+                    onChange={(e) => {
+                      setUpdateForm({ ...updateForm, reason: e.target.value });
+                      if (formErrors.reason) setFormErrors({ ...formErrors, reason: false });
+                    }}
+                    className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.reason ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
                   >
-                    STOCK IN (+)
+                    <option value="">Select Reason</option>
+                    {reasons[updateForm.updateType].map(reason => (
+                      <option key={reason} value={reason}>{reason}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-600 text-sm mb-2">Remarks (Optional)</label>
+                  <textarea
+                    value={updateForm.remarks}
+                    onChange={(e) => setUpdateForm({ ...updateForm, remarks: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                    placeholder="Additional notes"
+                  />
+                </div>
+
+                {updateForm.quantity && (
+                  <div className={`border rounded-lg p-3 ${updateForm.updateType === 'IN' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className={`font-semibold ${updateForm.updateType === 'IN' ? 'text-green-600' : 'text-red-600'}`}>
+                      New Stock: {updateForm.updateType === 'IN'
+                        ? selectedProduct.stock + parseInt(updateForm.quantity || '0')
+                        : selectedProduct.stock - parseInt(updateForm.quantity || '0')
+                      } {selectedProduct.unit}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowUpdateModal(false)}
+                    className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-all"
+                  >
+                    Cancel
                   </button>
                   <button
-                    onClick={() => setUpdateForm({ ...updateForm, updateType: 'OUT' })}
-                    className={`flex-1 py-2 rounded-lg font-semibold transition-all ${updateForm.updateType === 'OUT'
-                      ? 'bg-red-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    onClick={handleInitiateUpdate}
+                    disabled={isUpdateSuccess}
+                    className={`flex-1 px-6 py-3 rounded-lg font-semibold shadow-lg transition-all duration-500 transform ${isUpdateSuccess
+                      ? 'bg-green-500 text-white scale-110 ring-4 ring-green-200'
+                      : 'bg-green-600 hover:bg-green-700 text-white hover:scale-105'
                       }`}
                   >
-                    STOCK OUT (-)
+                    {isUpdateSuccess ? (
+                      <div className="flex flex-col items-center justify-center animate-bounce">
+                        <Check size={28} className="mb-1" />
+                        <span className="text-xs uppercase tracking-wider font-bold">Updated!</span>
+                      </div>
+                    ) : (
+                      'Update Stock'
+                    )}
                   </button>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-gray-600 text-sm mb-2">Quantity</label>
-                <input
-                  type="number"
-                  value={updateForm.quantity}
-                  onChange={(e) => setUpdateForm({ ...updateForm, quantity: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter quantity"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-600 text-sm mb-2">Reason</label>
-                <select
-                  value={updateForm.reason}
-                  onChange={(e) => setUpdateForm({ ...updateForm, reason: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Reason</option>
-                  {reasons[updateForm.updateType].map(reason => (
-                    <option key={reason} value={reason}>{reason}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-600 text-sm mb-2">Remarks (Optional)</label>
-                <textarea
-                  value={updateForm.remarks}
-                  onChange={(e) => setUpdateForm({ ...updateForm, remarks: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={2}
-                  placeholder="Additional notes"
-                />
-              </div>
-
-              {updateForm.quantity && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-green-600 font-semibold">
-                    New Stock: {updateForm.updateType === 'IN'
-                      ? selectedProduct.stock + parseInt(updateForm.quantity || '0')
-                      : selectedProduct.stock - parseInt(updateForm.quantity || '0')
-                    } {selectedProduct.unit}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowUpdateModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveStockUpdate}
-                  disabled={isUpdateSuccess}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold shadow-lg transition-all duration-500 transform ${isUpdateSuccess
-                    ? 'bg-green-500 text-white scale-110 ring-4 ring-green-200'
-                    : 'bg-green-600 hover:bg-green-700 text-white hover:scale-105'
-                    }`}
-                >
-                  {isUpdateSuccess ? (
-                    <div className="flex flex-col items-center justify-center animate-bounce">
-                      <Check size={28} className="mb-1" />
-                      <span className="text-xs uppercase tracking-wider font-bold">Updated!</span>
-                    </div>
-                  ) : (
-                    'Update Stock'
-                  )}
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -1125,6 +1180,72 @@ export default function Stock() {
                 <span className="font-semibold text-gray-800">Yearly</span>
                 <span className="text-xs text-gray-600">Last Year</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Glitch Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+          <div className="relative bg-gray-900 border-2 border-red-500 text-red-500 p-8 rounded-lg shadow-[0_0_20px_rgba(239,68,68,0.6)] w-[400px] overflow-hidden animate-pulse">
+
+            {/* Glitch Overlay Effects */}
+            <div className="absolute inset-0 bg-red-500/10 pointer-events-none mix-blend-overlay animate-ping"></div>
+
+            {/* Scanlines */}
+            <div className="absolute inset-0 pointer-events-none opacity-10"
+              style={{ background: 'linear-gradient(to bottom, transparent 50%, #000 50%)', backgroundSize: '100% 4px' }}>
+            </div>
+
+            <div className="relative z-10 text-center">
+              <div className="w-20 h-20 mx-auto bg-red-500/20 rounded-full flex items-center justify-center border-2 border-red-500 relative mb-6">
+                <div className="absolute inset-0 border-4 border-red-500 rounded-full animate-ping opacity-20"></div>
+                <RefreshCw size={40} className="text-red-500 animate-spin-slow" />
+              </div>
+
+              <h3 className="text-2xl font-black uppercase tracking-widest mb-2" style={{ textShadow: '2px 2px 0 #000' }}>
+                System Locked
+              </h3>
+              <p className="text-red-300 text-sm mb-6 font-mono tracking-wider">
+                Authentication Required to Modify Stock
+              </p>
+
+              <div className="mb-6 relative">
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(e) => {
+                    setAuthPassword(e.target.value);
+                    setAuthError(false);
+                  }}
+                  placeholder="ENTER PASSWORD"
+                  className="w-full bg-black/50 border-2 border-red-500 text-red-500 placeholder-red-800 px-4 py-3 rounded font-mono text-center tracking-[0.2em] focus:outline-none focus:shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleAuthSubmit()}
+                />
+                {authError && (
+                  <p className="text-red-500 font-bold text-xs mt-2 animate-bounce uppercase">
+                    Access Denied: Invalid Credentials
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => setShowAuthModal(false)}
+                  className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all font-mono uppercase text-sm tracking-wider"
+                >
+                  Abort
+                </button>
+                <button
+                  onClick={handleAuthSubmit}
+                  className="px-6 py-2 bg-red-600 text-white hover:bg-red-700 transition-all font-mono uppercase text-sm tracking-wider shadow-[4px_4px_0_#991b1b] active:translate-y-1 active:shadow-none relative overflow-hidden group"
+                >
+                  <span className="relative z-10">Authenticate</span>
+                  {/* Button Glitch Effect */}
+                  <span className="absolute top-0 left-[-100%] w-full h-full bg-white/20 skew-x-[45deg] group-hover:animate-[shimmer_1s_infinite]"></span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

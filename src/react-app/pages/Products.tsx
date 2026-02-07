@@ -28,7 +28,6 @@ interface Product {
   category: string;
   description: string;
   price: number;
-  gst: number;
   stock: number;
   minStock: number;
   unit: string;
@@ -60,12 +59,12 @@ export default function Products() {
     category: '',
     description: '',
     price: '',
-    gst: '18',
     stock: '',
     minStock: '',
     unit: 'pcs',
     status: 'Active' as 'Active' | 'Inactive'
   });
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
 
   const categories = ['Electronics', 'Mobile', 'Computers', 'Audio', 'Accessories'];
   const brands = ['Samsung', 'Apple', 'HP', 'Sony', 'Dell', 'LG', 'Lenovo', 'OnePlus'];
@@ -96,12 +95,12 @@ export default function Products() {
       category: '',
       description: '',
       price: '',
-      gst: '18',
       stock: '',
       minStock: '',
       unit: 'pcs',
       status: 'Active'
     });
+    setFormErrors({});
     setShowAddModal(true);
   };
 
@@ -113,26 +112,67 @@ export default function Products() {
       category: product.category,
       description: product.description,
       price: product.price.toString(),
-      gst: product.gst.toString(),
       stock: product.stock.toString(),
       minStock: product.minStock.toString(),
       unit: product.unit,
       status: product.status
     });
+    setFormErrors({});
     setShowAddModal(true);
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    if (confirm('Admin authentication required. Are you sure you want to delete this product?')) {
-      productService.deleteProduct(productId);
+  // Delete Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
+  const handleDeleteProduct = (product: Product) => {
+    setDeleteTarget(product);
+    setShowDeleteModal(true);
+    setShowDeleteSuccess(false);
+    setIsDeleting(false);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+
+    // Simulate processing time 
+    setTimeout(() => {
+      productService.deleteProduct(deleteTarget.id);
       setProducts(productService.getAllProducts());
-      alert('Product deleted successfully');
-    }
+
+      setIsDeleting(false);
+      setShowDeleteSuccess(true);
+
+      // Close modal
+      setTimeout(() => {
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setShowDeleteSuccess(false);
+      }, 2000);
+    }, 1500);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
   };
 
   const handleSaveProduct = () => {
-    if (!formData.name || !formData.brand || !formData.category || !formData.price || !formData.stock) {
-      alert('Please fill all required fields');
+    // Validation
+    const errors: Record<string, boolean> = {};
+    if (!formData.name) errors.name = true;
+    if (!formData.brand) errors.brand = true;
+    if (!formData.category) errors.category = true;
+    if (!formData.price) errors.price = true;
+    if (!formData.stock) errors.stock = true;
+    if (!formData.minStock) errors.minStock = true;
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
 
@@ -144,7 +184,6 @@ export default function Products() {
         category: formData.category,
         description: formData.description,
         price: parseFloat(formData.price),
-        gst: parseFloat(formData.gst),
         stock: parseInt(formData.stock),
         minStock: parseInt(formData.minStock),
         unit: formData.unit,
@@ -160,7 +199,6 @@ export default function Products() {
         category: formData.category,
         description: formData.description,
         price: parseFloat(formData.price),
-        gst: parseFloat(formData.gst),
         stock: parseInt(formData.stock),
         minStock: parseInt(formData.minStock),
         unit: formData.unit,
@@ -184,6 +222,9 @@ export default function Products() {
 
     setProducts(productService.getAllProducts());
   };
+
+  // ... (rest of the file until the button)
+
 
   const getDateFilter = (range: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
     const now = new Date();
@@ -227,7 +268,6 @@ export default function Products() {
       'Category': p.category,
       'Description': p.description,
       'Price': p.price,
-      'GST %': p.gst,
       'Stock': p.stock,
       'Min Stock': p.minStock,
       'Unit': p.unit,
@@ -390,7 +430,6 @@ export default function Products() {
                 <th className="text-left py-4 px-4 text-gray-600 font-bold">Brand</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-bold">Category</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-bold">Price</th>
-                <th className="text-left py-4 px-4 text-gray-600 font-bold">GST %</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-bold">Stock</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-bold">Status</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-bold">Updated</th>
@@ -421,7 +460,6 @@ export default function Products() {
                       <td className="py-3 px-4 text-gray-600">{product.brand}</td>
                       <td className="py-3 px-4 text-gray-600">{product.category}</td>
                       <td className="py-3 px-4 text-gray-800 font-semibold">₹{product.price.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-gray-600">{product.gst}%</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <span className="text-gray-800 font-semibold">{product.stock}</span>
@@ -451,7 +489,7 @@ export default function Products() {
                             <Edit size={18} />
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(product.id)}
+                            onClick={() => handleDeleteProduct(product)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete"
                           >
@@ -484,180 +522,193 @@ export default function Products() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Basic Details */}
-              <div>
-                <h3 className="text-lg font-bold text-green-600 mb-4">Basic Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Product Name *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Enter product name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Brand *</label>
-                    <select
-                      value={formData.brand}
-                      onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Select Brand</option>
-                      {brands.map(brand => (
-                        <option key={brand} value={brand}>{brand}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Category *</label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Unit</label>
-                    <select
-                      value={formData.unit}
-                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      {units.map(unit => (
-                        <option key={unit} value={unit}>{unit}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-gray-600 text-sm mb-2">Description</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      rows={2}
-                      placeholder="Product description (optional)"
-                    />
+            {isAddSuccess ? (
+              <div className="p-12 flex flex-col items-center justify-center min-h-[400px]">
+                <div className="relative w-24 h-24 mb-6">
+                  <div className="absolute inset-0 border-4 border-green-500 rounded-full animate-[ping_1s_ease-out_infinite]"></div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-green-500 rounded-full animate-[bounce_0.5s_ease-out]">
+                    <CheckCircle size={48} className="text-white" />
                   </div>
                 </div>
+                <h3 className="text-3xl font-black text-green-600 uppercase tracking-widest animate-pulse mb-2">
+                  {editingProduct ? 'Updated!' : 'Added!'}
+                </h3>
+                <p className="text-gray-500 font-medium">
+                  Product successfully {editingProduct ? 'updated' : 'added'} to inventory.
+                </p>
               </div>
-
-              {/* Pricing Details */}
-              <div>
-                <h3 className="text-lg font-bold text-green-600 mb-4">Pricing Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Price *</label>
-                    <input
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">GST % *</label>
-                    <input
-                      type="number"
-                      value={formData.gst}
-                      onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="18"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Stock Details */}
-              <div>
-                <h3 className="text-lg font-bold text-green-600 mb-4">Stock Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Opening Stock *</label>
-                    <input
-                      type="number"
-                      value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-600 text-sm mb-2">Minimum Stock Level *</label>
-                    <input
-                      type="number"
-                      value={formData.minStock}
-                      onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Status */}
-              <div>
-                <h3 className="text-lg font-bold text-green-600 mb-4">Product Status</h3>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="Active"
-                      checked={formData.status === 'Active'}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Inactive' })}
-                      className="w-4 h-4 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-gray-800">Active</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="Inactive"
-                      checked={formData.status === 'Inactive'}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Inactive' })}
-                      className="w-4 h-4 text-gray-600 focus:ring-gray-500"
-                    />
-                    <span className="text-gray-800">Inactive</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveProduct}
-                  disabled={isAddSuccess && !editingProduct}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold shadow-lg transition-all duration-500 transform ${isAddSuccess && !editingProduct
-                    ? 'bg-green-500 text-white scale-110 ring-4 ring-green-200'
-                    : 'bg-green-600 hover:bg-green-700 text-white hover:scale-105'
-                    }`}
-                >
-                  {isAddSuccess && !editingProduct ? (
-                    <div className="flex flex-col items-center justify-center animate-bounce">
-                      <Check size={28} className="mb-1" />
-                      <span className="text-xs uppercase tracking-wider font-bold">Added!</span>
+            ) : (
+              <div className="p-6 space-y-6">
+                {/* Basic Details */}
+                <div>
+                  <h3 className="text-lg font-bold text-green-600 mb-4">Basic Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Product Name *</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => {
+                          setFormData({ ...formData, name: e.target.value });
+                          if (formErrors.name) setFormErrors({ ...formErrors, name: false });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.name ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                        placeholder="Enter product name"
+                      />
                     </div>
-                  ) : (
-                    editingProduct ? 'Update Product' : 'Add Product'
-                  )}
-                </button>
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Brand *</label>
+                      <select
+                        value={formData.brand}
+                        onChange={(e) => {
+                          setFormData({ ...formData, brand: e.target.value });
+                          if (formErrors.brand) setFormErrors({ ...formErrors, brand: false });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.brand ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                      >
+                        <option value="">Select Brand</option>
+                        {brands.map(brand => (
+                          <option key={brand} value={brand}>{brand}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Category *</label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => {
+                          setFormData({ ...formData, category: e.target.value });
+                          if (formErrors.category) setFormErrors({ ...formErrors, category: false });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.category ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Unit</label>
+                      <select
+                        value={formData.unit}
+                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        {units.map(unit => (
+                          <option key={unit} value={unit}>{unit}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-gray-600 text-sm mb-2">Description</label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        rows={2}
+                        placeholder="Product description (optional)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-green-600 mb-4">Pricing Details</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Price *</label>
+                      <input
+                        type="number"
+                        value={formData.price}
+                        onChange={(e) => {
+                          setFormData({ ...formData, price: e.target.value });
+                          if (formErrors.price) setFormErrors({ ...formErrors, price: false });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.price ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stock Details */}
+                <div>
+                  <h3 className="text-lg font-bold text-green-600 mb-4">Stock Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Opening Stock *</label>
+                      <input
+                        type="number"
+                        value={formData.stock}
+                        onChange={(e) => {
+                          setFormData({ ...formData, stock: e.target.value });
+                          if (formErrors.stock) setFormErrors({ ...formErrors, stock: false });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.stock ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">Minimum Stock Level *</label>
+                      <input
+                        type="number"
+                        value={formData.minStock}
+                        onChange={(e) => {
+                          setFormData({ ...formData, minStock: e.target.value });
+                          if (formErrors.minStock) setFormErrors({ ...formErrors, minStock: false });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.minStock ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-300'}`}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <h3 className="text-lg font-bold text-green-600 mb-4">Product Status</h3>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="Active"
+                        checked={formData.status === 'Active'}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Inactive' })}
+                        className="w-4 h-4 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-gray-800">Active</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="Inactive"
+                        checked={formData.status === 'Inactive'}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Inactive' })}
+                        className="w-4 h-4 text-gray-600 focus:ring-gray-500"
+                      />
+                      <span className="text-gray-800">Inactive</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveProduct}
+                    className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-lg transition-all hover:scale-105"
+                  >
+                    {editingProduct ? 'Update Product' : 'Add Product'}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -714,6 +765,78 @@ export default function Products() {
                 <span className="font-semibold text-gray-800">Yearly</span>
                 <span className="text-xs text-gray-600">Last Year</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Custom Glitch Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className={`relative bg-gray-900 border-2 border-red-500 text-red-500 p-8 rounded-lg shadow-[0_0_20px_rgba(239,68,68,0.6)] w-[400px] text-center overflow-hidden
+            ${isDeleting ? 'animate-pulse' : ''}`}>
+
+            {/* Glitch Overlay Effects */}
+            {isDeleting && (
+              <div className="absolute inset-0 bg-red-500/10 pointer-events-none mix-blend-overlay animate-ping"></div>
+            )}
+
+            {!showDeleteSuccess ? (
+              <>
+                <div className="mb-6 relative">
+                  <div className="w-20 h-20 mx-auto bg-red-500/20 rounded-full flex items-center justify-center border-2 border-red-500 relative">
+                    <Trash2 size={40} className={`text-red-500 ${isDeleting ? 'animate-bounce' : ''}`} />
+                    {isDeleting && (
+                      <div className="absolute inset-0 border-4 border-red-500 rounded-full animate-ping opacity-20"></div>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className="text-2xl font-black uppercase tracking-widest mb-2" style={{ textShadow: '2px 2px 0 #000' }}>
+                  Confirm Deletion
+                </h3>
+                <p className="text-red-300 text-sm mb-8 font-mono">
+                  Are you sure you want to eliminate <br />
+                  <span className="font-bold text-white bg-red-600 px-1">{deleteTarget?.name}</span>?
+                  <br /> This action is <span className="underline decoration-wavy">irreversible</span>.
+                </p>
+
+                <div className="flex gap-4 justify-center">
+                  <button
+                    onClick={cancelDelete}
+                    disabled={isDeleting}
+                    className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all font-mono uppercase text-sm tracking-wider"
+                  >
+                    Abort
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={isDeleting}
+                    className="px-6 py-2 bg-red-600 text-white hover:bg-red-700 transition-all font-mono uppercase text-sm tracking-wider shadow-[4px_4px_0_#991b1b] active:translate-y-1 active:shadow-none relative overflow-hidden group"
+                  >
+                    {isDeleting ? 'Purging...' : 'Execute'}
+                    {/* Button Glitch Effect */}
+                    <span className="absolute top-0 left-[-100%] w-full h-full bg-white/20 skew-x-[45deg] group-hover:animate-[shimmer_1s_infinite]"></span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="py-8">
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  <div className="absolute inset-0 border-4 border-green-500 rounded-full animate-[ping_1s_ease-out_infinite]"></div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-green-500 rounded-full animate-[bounce_0.5s_ease-out]">
+                    <CheckCircle size={48} className="text-white" />
+                  </div>
+                </div>
+                <h3 className="text-3xl font-black text-green-500 uppercase tracking-widest animate-pulse">
+                  Deleted
+                </h3>
+                <p className="text-green-300 font-mono text-sm mt-2">Target successfully removed.</p>
+              </div>
+            )}
+
+            {/* Scanlines */}
+            <div className="absolute inset-0 pointer-events-none opacity-10"
+              style={{ background: 'linear-gradient(to bottom, transparent 50%, #000 50%)', backgroundSize: '100% 4px' }}>
             </div>
           </div>
         </div>

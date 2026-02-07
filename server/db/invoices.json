@@ -1,0 +1,76 @@
+[
+  {
+    "id": "INV-159485",
+    "timestamp": "2026-02-05T17:39:27.401Z",
+    "customer": "sanjah ",
+    "amount": 4130,
+    "customerName": "sanjah ",
+    "customerAddress": "123 MG Road, Bangalore",
+    "customerPhone": "20202020",
+    "date": "5/2/2026",
+    "time": "11:09 pm",
+    "dueDate": "",
+    "dueTime": "",
+    "paymentMode": "Cash",
+    "invoiceNumber": "INV-159485",
+    "products": [
+      {
+        "sNo": 1,
+        "description": "Sony Headphones",
+        "qty": 1,
+        "rate": 3500,
+        "discountPercent": 0,
+        "amount": 3500,
+        "hsnCode": ""
+      }
+    ],
+    "subTotal": 3500,
+    "cgst": 315,
+    "sgst": 315,
+    "roundOff": 0,
+    "grandTotal": 4130,
+    "amountInWords": "Four Thousand One Hundred Thirty Rupees Only",
+    "paidAmount": 0,
+    "balance": 4130,
+    "gstRate": 18,
+    "payMode": "Cash",
+    "balanceAmount": 4130
+  },
+  {
+    "id": "INV-159485",
+    "timestamp": "2026-02-05T17:39:28.828Z",
+    "customer": "sanjah ",
+    "amount": 4130,
+    "customerName": "sanjah ",
+    "customerAddress": "123 MG Road, Bangalore",
+    "customerPhone": "20202020",
+    "date": "5/2/2026",
+    "time": "11:09 pm",
+    "dueDate": "",
+    "dueTime": "",
+    "paymentMode": "Cash",
+    "invoiceNumber": "INV-159485",
+    "products": [
+      {
+        "sNo": 1,
+        "description": "Sony Headphones",
+        "qty": 1,
+        "rate": 3500,
+        "discountPercent": 0,
+        "amount": 3500,
+        "hsnCode": ""
+      }
+    ],
+    "subTotal": 3500,
+    "cgst": 315,
+    "sgst": 315,
+    "roundOff": 0,
+    "grandTotal": 4130,
+    "amountInWords": "Four Thousand One Hundred Thirty Rupees Only",
+    "paidAmount": 0,
+    "balance": 4130,
+    "gstRate": 18,
+    "payMode": "Cash",
+    "balanceAmount": 4130
+  }
+]

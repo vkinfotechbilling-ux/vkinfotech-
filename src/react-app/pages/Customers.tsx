@@ -18,6 +18,7 @@ import {
   ShoppingBag,
   DollarSign,
   Calendar,
+  CheckCircle,
   Check,
   FileSpreadsheet,
   BarChart3,
@@ -49,78 +50,19 @@ interface Invoice {
   paidAmount: number;
   balance: number;
   paymentMode: string;
+  customerName?: string;
+  dueDate?: string;
 }
 
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
 
-  // Load customers from localStorage on mount
   useEffect(() => {
     const savedCustomers = localStorage.getItem('customers');
     if (savedCustomers) {
       setCustomers(JSON.parse(savedCustomers));
     } else {
-      // Initialize with sample data if empty
-      const initialCustomers = [
-        {
-          id: 'C001',
-          name: 'Rajesh Kumar',
-          phone: '+91 9876543210',
-          address: '123 MG Road, Bangalore',
-          email: 'rajesh@email.com',
-          customerType: 'Retail' as const,
-          status: 'Active' as const,
-          totalPurchases: 145000,
-          totalOrders: 8,
-          lastPurchaseDate: '2024-01-25',
-          createdAt: '2024-01-01',
-          updatedAt: '2024-01-25'
-        },
-        {
-          id: 'C002',
-          name: 'Priya Sharma',
-          phone: '+91 9876543211',
-          address: '456 Brigade Road, Bangalore',
-          email: 'priya@email.com',
-          customerType: 'Wholesale' as const,
-          status: 'Active' as const,
-          totalPurchases: 320000,
-          totalOrders: 15,
-          lastPurchaseDate: '2024-01-24',
-          createdAt: '2024-01-05',
-          updatedAt: '2024-01-24'
-        },
-        {
-          id: 'C003',
-          name: 'Amit Patel',
-          phone: '+91 9876543212',
-          address: '789 Koramangala, Bangalore',
-          email: 'amit@email.com',
-          customerType: 'Retail' as const,
-          status: 'Active' as const,
-          totalPurchases: 89000,
-          totalOrders: 5,
-          lastPurchaseDate: '2024-01-22',
-          createdAt: '2024-01-10',
-          updatedAt: '2024-01-22'
-        },
-        {
-          id: 'C004',
-          name: 'Sneha Reddy',
-          phone: '+91 9876543213',
-          address: '321 Indiranagar, Bangalore',
-          email: '',
-          customerType: 'Retail' as const,
-          status: 'Inactive' as const,
-          totalPurchases: 45000,
-          totalOrders: 2,
-          lastPurchaseDate: '2024-01-10',
-          createdAt: '2023-12-15',
-          updatedAt: '2024-01-10'
-        }
-      ];
-      setCustomers(initialCustomers);
-      localStorage.setItem('customers', JSON.stringify(initialCustomers));
+      setCustomers([]);
     }
   }, []);
 
@@ -260,13 +202,45 @@ export default function Customers() {
     }, 1500);
   };
 
+  // Delete Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
   const handleDeleteCustomer = (customer: Customer) => {
-    if (confirm(`Are you sure you want to delete ${customer.name}?`)) {
-      const updatedCustomers = customers.filter(c => c.id !== customer.id);
+    setDeleteTarget(customer);
+    setShowDeleteModal(true);
+    setShowDeleteSuccess(false);
+    setIsDeleting(false);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+
+    // Simulate processing time for glitch effect
+    setTimeout(() => {
+      const updatedCustomers = customers.filter(c => c.id !== deleteTarget.id);
       setCustomers(updatedCustomers);
       localStorage.setItem('customers', JSON.stringify(updatedCustomers));
-      alert('Customer deleted successfully');
-    }
+
+      setIsDeleting(false);
+      setShowDeleteSuccess(true);
+
+      // Close modal after success animation
+      setTimeout(() => {
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setShowDeleteSuccess(false);
+      }, 2000);
+    }, 1500);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
   };
 
   const handleViewHistory = (customer: Customer) => {
@@ -468,111 +442,110 @@ export default function Customers() {
 
       {/* Customer Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[400px]">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left py-4 px-4 text-gray-600 font-semibold">Customer ID</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-semibold">Name</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-semibold">Contact</th>
-                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Type</th>
-                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Total Purchases</th>
+                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Total Purchase</th>
+                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Paid Amount</th>
                 <th className="text-left py-4 px-4 text-gray-600 font-semibold">Orders</th>
-                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Last Purchase</th>
-                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Status</th>
-                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Actions</th>
+                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Payment Mode</th>
+                <th className="text-left py-4 px-4 text-gray-600 font-semibold">Due Details</th>
+                <th className="text-center py-4 px-4 text-gray-600 font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-gray-500">
+                  <td colSpan={8} className="text-center py-8 text-gray-500">
                     No customers found
                   </td>
                 </tr>
               ) : (
-                filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-gray-800 font-medium">{customer.id}</td>
-                    <td className="py-3 px-4">
-                      <div className="text-gray-800 font-medium">{customer.name}</div>
-                      {customer.email && (
-                        <div className="text-gray-500 text-xs flex items-center gap-1 mt-1">
-                          <Mail size={12} />
-                          {customer.email}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-gray-800 flex items-center gap-1">
-                        <Phone size={14} />
-                        {customer.phone}
-                      </div>
-                      {customer.address && (
-                        <div className="text-gray-500 text-xs flex items-center gap-1 mt-1">
-                          <MapPin size={12} />
-                          {customer.address.slice(0, 30)}...
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${customer.customerType === 'Wholesale'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-blue-100 text-blue-700'
-                        }`}>
-                        {customer.customerType}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-gray-800 font-bold">₹{customer.totalPurchases.toLocaleString()}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1 text-gray-800">
-                        <ShoppingBag size={14} />
-                        {customer.totalOrders}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-gray-500 text-sm flex items-center gap-1">
-                        <Calendar size={14} />
-                        {customer.lastPurchaseDate || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${customer.status === 'Active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                        }`}>
-                        {customer.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
+                filteredCustomers.map((customer) => {
+                  // Derive details from invoices
+                  const myInvoices = customerInvoices.filter(inv => inv.customerId === customer.id || inv.customerName === customer.name); // Fallback to name if ID mapping fails
+
+                  // Payment Mode (Last used)
+                  const lastInvoice = [...myInvoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                  const lastPaymentMode = lastInvoice ? lastInvoice.paymentMode : '-';
+
+                  // Due Details
+                  const unpaidInvoices = myInvoices.filter(inv => inv.balance > 0);
+                  const totalDue = unpaidInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+                  const dueText = totalDue > 0 ? `₹${totalDue.toLocaleString()}` : 'Nil';
+
+                  const totalPaid = myInvoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
+
+                  return (
+                    <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-4 text-gray-800 font-medium">{customer.id}</td>
+                      <td className="py-3 px-4">
+                        <div className="text-gray-800 font-medium">{customer.name}</div>
+                        {customer.email && <div className="text-gray-500 text-xs mt-0.5">{customer.email}</div>}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-gray-800 font-medium">{customer.phone}</div>
+                        {customer.address && <div className="text-gray-500 text-xs mt-0.5 truncat max-w-[150px]">{customer.address}</div>}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-gray-800 font-bold">₹{customer.totalPurchases.toLocaleString()}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-green-600 font-bold">₹{totalPaid.toLocaleString()}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="bg-blue-100 text-blue-700 py-1 px-3 rounded-full text-xs font-bold">
+                          {customer.totalOrders}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${lastPaymentMode === 'Online' || lastPaymentMode === 'UPI' ? 'bg-purple-100 text-purple-700' :
+                          lastPaymentMode === 'Cash' ? 'bg-green-100 text-green-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                          {lastPaymentMode || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {totalDue > 0 ? (
+                          <div className="flex flex-col">
+                            <span className="text-red-600 font-bold">{dueText}</span>
+                            <span className="text-red-400 text-[10px]">{unpaidInvoices.length} Bills Due</span>
+                          </div>
+                        ) : (
+                          <span className="text-green-600 font-bold bg-green-50 px-2 py-1 rounded">Nil</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 flex justify-center gap-2">
+                        <button
+                          onClick={() => handleViewHistory(customer)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-sm font-medium shadow-sm transition-colors flex items-center gap-1"
+                        >
+                          <FileSpreadsheet size={14} />
+                          View Bill
+                        </button>
                         <button
                           onClick={() => openEditModal(customer)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          title="Edit"
+                          className="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition-colors"
+                          title="Edit Details"
                         >
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => handleViewHistory(customer)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
-                          title="View History"
-                        >
-                          <History size={16} />
-                        </button>
-                        <button
                           onClick={() => handleDeleteCustomer(customer)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Delete"
+                          className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-colors"
+                          title="Delete Customer"
                         >
                           <Trash2 size={16} />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -985,6 +958,78 @@ export default function Customers() {
                 <span className="font-semibold text-gray-800">Yearly</span>
                 <span className="text-xs text-gray-600">Last Year</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Custom Glitch Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className={`relative bg-gray-900 border-2 border-red-500 text-red-500 p-8 rounded-lg shadow-[0_0_20px_rgba(239,68,68,0.6)] w-[400px] text-center overflow-hidden
+            ${isDeleting ? 'animate-pulse' : ''}`}>
+
+            {/* Glitch Overlay Effects */}
+            {isDeleting && (
+              <div className="absolute inset-0 bg-red-500/10 pointer-events-none mix-blend-overlay animate-ping"></div>
+            )}
+
+            {!showDeleteSuccess ? (
+              <>
+                <div className="mb-6 relative">
+                  <div className="w-20 h-20 mx-auto bg-red-500/20 rounded-full flex items-center justify-center border-2 border-red-500 relative">
+                    <Trash2 size={40} className={`text-red-500 ${isDeleting ? 'animate-bounce' : ''}`} />
+                    {isDeleting && (
+                      <div className="absolute inset-0 border-4 border-red-500 rounded-full animate-ping opacity-20"></div>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className="text-2xl font-black uppercase tracking-widest mb-2" style={{ textShadow: '2px 2px 0 #000' }}>
+                  Confirm Deletion
+                </h3>
+                <p className="text-red-300 text-sm mb-8 font-mono">
+                  Are you sure you want to eliminate <br />
+                  <span className="font-bold text-white bg-red-600 px-1">{deleteTarget?.name}</span>?
+                  <br /> This action is <span className="underline decoration-wavy">irreversible</span>.
+                </p>
+
+                <div className="flex gap-4 justify-center">
+                  <button
+                    onClick={cancelDelete}
+                    disabled={isDeleting}
+                    className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all font-mono uppercase text-sm tracking-wider"
+                  >
+                    Abort
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={isDeleting}
+                    className="px-6 py-2 bg-red-600 text-white hover:bg-red-700 transition-all font-mono uppercase text-sm tracking-wider shadow-[4px_4px_0_#991b1b] active:translate-y-1 active:shadow-none relative overflow-hidden group"
+                  >
+                    {isDeleting ? 'Purging...' : 'Execute'}
+                    {/* Button Glitch Effect */}
+                    <span className="absolute top-0 left-[-100%] w-full h-full bg-white/20 skew-x-[45deg] group-hover:animate-[shimmer_1s_infinite]"></span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="py-8">
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  <div className="absolute inset-0 border-4 border-green-500 rounded-full animate-[ping_1s_ease-out_infinite]"></div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-green-500 rounded-full animate-[bounce_0.5s_ease-out]">
+                    <CheckCircle size={48} className="text-white" />
+                  </div>
+                </div>
+                <h3 className="text-3xl font-black text-green-500 uppercase tracking-widest animate-pulse">
+                  Deleted
+                </h3>
+                <p className="text-green-300 font-mono text-sm mt-2">Target successfully removed.</p>
+              </div>
+            )}
+
+            {/* Scanlines */}
+            <div className="absolute inset-0 pointer-events-none opacity-10"
+              style={{ background: 'linear-gradient(to bottom, transparent 50%, #000 50%)', backgroundSize: '100% 4px' }}>
             </div>
           </div>
         </div>
