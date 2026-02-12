@@ -26,16 +26,15 @@ interface PDFGenerationOptions {
 const createOffscreenContainer = (): HTMLDivElement => {
     const container = document.createElement('div');
     container.id = `pdf-generator-${Date.now()}`;
+
+    // Position off-screen but allow full rendering for PDF capture
     container.style.position = 'fixed';
-    container.style.top = '-99999px';
-    container.style.left = '-99999px';
+    container.style.top = '0';
+    container.style.left = '-9999px';  // Off-screen to the left
     container.style.width = '210mm';
     container.style.height = 'auto';
-    container.style.overflow = 'hidden';
-    container.style.pointerEvents = 'none';
-    container.style.visibility = 'hidden';
-    container.style.opacity = '0';
-    container.style.zIndex = '-9999';
+    container.style.overflow = 'visible';  // Allow content to render
+    container.style.zIndex = '-1';
 
     document.body.appendChild(container);
     return container;
@@ -195,6 +194,7 @@ export const downloadBatchInvoicesAsZip = async (
         throw new Error('No invoices to download');
     }
 
+    console.log(`[BatchDownload] Starting batch download for ${invoicesData.length} invoices`);
     const container = createOffscreenContainer();
 
     try {
@@ -202,8 +202,11 @@ export const downloadBatchInvoicesAsZip = async (
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
 
+        console.log(`[BatchDownload] Processing ${invoicesData.length} invoices...`);
+
         for (let i = 0; i < invoicesData.length; i++) {
             const data = invoicesData[i];
+            console.log(`[BatchDownload] Processing invoice ${i + 1}/${invoicesData.length}: ${data.invoiceNumber}`);
 
             // Update progress
             if (options?.onProgress) {
@@ -217,11 +220,18 @@ export const downloadBatchInvoicesAsZip = async (
                 const pdfBlob = pdf.output('blob');
                 const filename = `Invoice_${data.invoiceNumber}_${data.customerName.replace(/\s+/g, '_')}.pdf`;
                 zip.file(filename, pdfBlob);
+                console.log(`[BatchDownload] Added ${filename} to ZIP (${pdfBlob.size} bytes)`);
+            } else {
+                console.warn(`[BatchDownload] Failed to generate PDF for invoice ${data.invoiceNumber}`);
             }
         }
 
+        console.log(`[BatchDownload] All ${invoicesData.length} invoices processed. Generating ZIP...`);
+
         // Generate and download ZIP
         const zipBlob = await zip.generateAsync({ type: 'blob' });
+        console.log(`[BatchDownload] ZIP generated: ${zipBlob.size} bytes`);
+
         const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -231,8 +241,10 @@ export const downloadBatchInvoicesAsZip = async (
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
+        console.log(`[BatchDownload] Download triggered successfully`);
+
     } catch (error) {
-        console.error('Batch ZIP generation failed:', error);
+        console.error('[BatchDownload] Batch ZIP generation failed:', error);
         throw new Error('Failed to generate all bills. Please try again.');
     } finally {
         // Cleanup container

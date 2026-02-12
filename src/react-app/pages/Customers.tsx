@@ -400,9 +400,8 @@ export default function Customers() {
       const sortedInvoices = invoices.sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      // Navigate to the most recent bill
-      const mostRecentBill = sortedInvoices[0];
-      navigate(`/customers/${customer.id}/bill/${mostRecentBill.id}`);
+      // Navigate to bill list showing all bills
+      navigate(`/customers/${customer.id}/bills`);
     } else {
       alert('No bills found for this customer');
     }

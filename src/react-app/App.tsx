@@ -5,6 +5,7 @@ import Billing from "@/react-app/pages/Billing";
 import Products from "@/react-app/pages/Products";
 import Stock from "@/react-app/pages/Stock";
 import Customers from "@/react-app/pages/Customers";
+import CustomerBillList from "@/react-app/pages/CustomerBillList";
 import InvoiceView from "@/react-app/pages/InvoiceView";
 import Reports from "@/react-app/pages/Reports";
 import Login from "@/react-app/pages/Login";
@@ -38,6 +39,11 @@ export default function App() {
           <Route path="/customers" element={
             <ProtectedRoute>
               <Customers />
+            </ProtectedRoute>
+          } />
+          <Route path="/customers/:customerId/bills" element={
+            <ProtectedRoute>
+              <CustomerBillList />
             </ProtectedRoute>
           } />
           <Route path="/customers/:customerId/bill/:billId" element={
