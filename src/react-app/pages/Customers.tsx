@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Plus,
   Search,
@@ -23,9 +24,8 @@ import {
   Layers
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import InvoiceTemplate from '../components/invoice/InvoiceTemplate';
-import { generateInvoicePDF } from '../components/invoice/InvoicePrintHandler';
 import { CompanyDetails, InvoiceData } from '../types';
+import { downloadSingleInvoicePDF, downloadBatchInvoicesAsZip } from '../services/BackgroundPDFGenerator';
 
 interface Customer {
   id: string;
@@ -107,6 +107,7 @@ const mapInvoiceToPrintData = (invoice: Invoice, customer: Customer, _companyDet
 };
 
 export default function Customers() {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
@@ -146,6 +147,7 @@ export default function Customers() {
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // Company Details (Hardcoded for now as in Billing)
   const companyDetails: CompanyDetails = {
@@ -164,82 +166,64 @@ export default function Customers() {
 
   const handleDownloadPDF = async (invoice: Invoice, customer: Customer) => {
     setDownloadingInvoiceId(invoice.id);
-    // Determine data to render
-    const printData = mapInvoiceToPrintData(invoice, customer, companyDetails);
+    setDownloadError(null);
 
-    // Set rendering state
-    setRenderedInvoiceData(printData);
-
-    // Allow React to render the hidden invoice
-    setTimeout(async () => {
-      try {
-        const targetElement = document.getElementById('hidden-invoice-renderer');
-        if (targetElement) {
-          await generateInvoicePDF(companyDetails, printData, { targetElement });
-        }
-      } catch (err) {
-        console.error("Download failed", err);
-        alert("Failed to download PDF");
-      } finally {
-        setDownloadingInvoiceId(null);
-        setRenderedInvoiceData(null);
-      }
-    }, 500); // Wait for render
+    try {
+      // Use background PDF generator - no DOM rendering required
+      const printData = mapInvoiceToPrintData(invoice, customer, companyDetails);
+      await downloadSingleInvoicePDF(companyDetails, printData);
+    } catch (err) {
+      console.error("Download failed", err);
+      setDownloadError("Failed to download PDF. Please try again.");
+      setTimeout(() => setDownloadError(null), 3000);
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
   };
 
-  const handleDownloadAllPDF = (customer: Customer, invoices: Invoice[]) => {
+  const handleDownloadAllPDF = async (customer: Customer, invoices: Invoice[]) => {
     if (invoices.length === 0) return;
+
     setIsBatchDownloading(true);
     setBatchProgress({ current: 0, total: invoices.length });
+    setDownloadError(null);
 
-    // 1. Sort invoices
-    const sortedInvoices = [...invoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    try {
+      // Sort invoices by date (newest first)
+      const sortedInvoices = [...invoices].sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
 
-    // 2. Prepare all data at once
-    const allPrintData = sortedInvoices.map(inv => mapInvoiceToPrintData(inv, customer, companyDetails));
+      // Prepare all invoice data
+      const allPrintData = sortedInvoices.map(inv =>
+        mapInvoiceToPrintData(inv, customer, companyDetails)
+      );
 
-    // 3. Trigger Render
-    setRenderedInvoiceData(allPrintData);
-
-    // 4. Wait for render, then capture all
-    setTimeout(async () => {
-      try {
-        let pdfInstance: any = null;
-
-        for (let i = 0; i < allPrintData.length; i++) {
-          const targetId = `invoice-batch-${i}`;
-          const targetElement = document.getElementById(targetId);
-
-          if (targetElement) {
-            // Generate PDF page
-            const newPdf = await generateInvoicePDF(companyDetails, allPrintData[i], {
-              targetElement,
-              save: false,
-              pdfInstance: pdfInstance
-            });
-            pdfInstance = newPdf;
-            setBatchProgress(prev => ({ ...prev, current: i + 1 }));
+      // Use background PDF generator - downloads as ZIP file
+      // This runs completely in the background without rendering any UI
+      await downloadBatchInvoicesAsZip(
+        companyDetails,
+        allPrintData,
+        customer.name,
+        {
+          onProgress: (current, total) => {
+            setBatchProgress({ current, total });
           }
         }
+      );
 
-        // Save final PDF
-        if (pdfInstance) {
-          pdfInstance.save(`${customer.name.replace(/\s+/g, '_')}_All_Invoices.pdf`);
-        }
-
-      } catch (err) {
-        console.error("Batch download failed", err);
-        alert("Failed to download all bills. Please try again.");
-      } finally {
-        setIsBatchDownloading(false);
-        setRenderedInvoiceData(null);
-      }
-    }, 1000); // 1s wait for all DOM nodes to be ready
+    } catch (err) {
+      console.error("Batch download failed", err);
+      setDownloadError("Failed to download all bills. Please try again.");
+      setTimeout(() => setDownloadError(null), 5000);
+    } finally {
+      setIsBatchDownloading(false);
+      setBatchProgress({ current: 0, total: 0 });
+    }
   };
 
-  const [renderedInvoiceData, setRenderedInvoiceData] = useState<InvoiceData | InvoiceData[] | null>(null);
-
-  // Removed old sequential effect logic
+  // Removed: renderedInvoiceData state - no longer needed with background PDF generation
+  // Removed: old sequential effect logic - background generation doesn't require DOM rendering
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
@@ -401,15 +385,27 @@ export default function Customers() {
   };
 
   const handleViewHistory = (customer: Customer) => {
-    // Robust filtering: valid if customerId matches OR phone matches
+    // Navigate to bill history - opens in new tab for better UX
+    // User can view bills in full page without leaving customer list
     const invoices = customerInvoices.filter(inv =>
       inv.customerId === customer.id ||
       (inv.customerPhone && inv.customerPhone === customer.phone) ||
-      (!inv.customerId && inv.customerName === customer.name) // Fallback for very old data
+      (!inv.customerId && inv.customerName === customer.name)
     );
-    setSelectedCustomerInvoices(invoices);
-    setSelectedCustomer(customer);
-    setShowHistoryModal(true);
+
+    // If customer has invoices, navigate to the first one
+    // Otherwise, show alert
+    if (invoices.length > 0) {
+      // Sort by date to show most recent first
+      const sortedInvoices = invoices.sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      // Navigate to the most recent bill
+      const mostRecentBill = sortedInvoices[0];
+      navigate(`/customers/${customer.id}/bill/${mostRecentBill.id}`);
+    } else {
+      alert('No bills found for this customer');
+    }
   };
 
   const openEditModal = (customer: Customer) => {
@@ -1286,23 +1282,12 @@ export default function Customers() {
         </div>
       )}
 
-      {/* Hidden Invoice Renderer for PDF Generation */}
-      {/* Hidden Invoice Renderer for PDF Generation */}
-      <div id="hidden-invoice-renderer" style={{ position: 'fixed', top: -10000, left: -10000, pointerEvents: 'none' }}>
-        {renderedInvoiceData && (
-          Array.isArray(renderedInvoiceData) ? (
-            renderedInvoiceData.map((data, index) => (
-              <div key={index} id={`invoice-batch-${index}`} className="mb-8">
-                <InvoiceTemplate company={companyDetails} data={data} />
-              </div>
-            ))
-          ) : (
-            <div id="invoice">
-              <InvoiceTemplate company={companyDetails} data={renderedInvoiceData} />
-            </div>
-          )
-        )}
-      </div>
+      {/* Error Toast */}
+      {downloadError && (
+        <div className="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-bottom-5">
+          <p className="font-semibold">{downloadError}</p>
+        </div>
+      )}
     </div>
   );
 }

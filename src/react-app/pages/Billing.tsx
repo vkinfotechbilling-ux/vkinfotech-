@@ -16,6 +16,18 @@ interface Product {
   amount: number;
 }
 
+/**
+ * Billing Component
+ * 
+ * This component is ONLY for creating and editing the CURRENT bill.
+ * It manages the active billing session state.
+ * 
+ * DO NOT use this component for viewing customer bill history.
+ * Use the Customers page with InvoicePreview component instead.
+ * 
+ * State Isolation: All state in this component is local and never shared
+ * with the Customers page to prevent conflicts.
+ */
 export default function Billing() {
   const descriptionRef = useRef<HTMLInputElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
