@@ -6,9 +6,12 @@ const User = require('../models/User');
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+        const trimmedUsername = username ? username.trim() : '';
 
-        // Find user by username
-        const user = await User.findOne({ username });
+        // Find user by username (case-insensitive and trimmed)
+        const user = await User.findOne({
+            username: { $regex: new RegExp(`^${trimmedUsername}$`, 'i') }
+        });
         if (!user) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
@@ -39,5 +42,6 @@ router.get('/', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch users', details: err.message });
     }
 });
+
 
 module.exports = router;
