@@ -31,15 +31,20 @@ mongoose.connect(MONGO_URI)
         console.log('✅ Connected to MongoDB: vkinfotech');
         console.log(`   Database: ${MONGO_URI}`);
 
-        // Seed default users if none exist
-        const userCount = await User.countDocuments();
-        if (userCount === 0) {
-            await User.insertMany([
-                { id: '1', username: 'VK INFOTECH', password: 'VKINFOTECH123', role: 'admin', name: 'Administrator' },
-                { id: '2', username: 'VK INFOTECH STAFF', password: 'VKINFOTECHSTAFF123', role: 'staff', name: 'Staff Member' }
-            ]);
-            console.log('✅ Default users seeded (admin + staff)');
+        // Ensure requested default users exist
+        const defaultUsers = [
+            { id: 'VK INFOTECH', username: 'VK INFOTECH', password: 'VKINFOTECH123', role: 'admin', name: 'VK INFOTECH ADMIN' },
+            { id: 'VK INFOTECHSTAFF', username: 'VK INFOTECHSTAFF', password: 'VKINFOTECHSTAFF123', role: 'staff', name: 'VK INFOTECH STAFF' }
+        ];
+
+        for (const userData of defaultUsers) {
+            await User.findOneAndUpdate(
+                { username: userData.username },
+                userData,
+                { upsert: true, new: true }
+            );
         }
+        console.log('✅ Custom default users synchronized');
     })
     .catch(err => {
         console.error('❌ MongoDB connection error:', err.message);
