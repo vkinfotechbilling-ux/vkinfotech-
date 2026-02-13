@@ -324,7 +324,8 @@ export default function Customers() {
         'Status': c.status,
         'Total Purchases': c.totalPurchases,
         'Total Orders': c.totalOrders,
-        'Last Purchase': c.lastPurchaseDate || ''
+        'Last Purchase': c.lastPurchaseDate || '',
+        'Created At': c.createdAt || ''
       }));
 
       const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -532,6 +533,9 @@ export default function Customers() {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Created By
                 </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Created At
+                </th>
                 <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Actions
                 </th>
@@ -540,7 +544,7 @@ export default function Customers() {
             <tbody className="divide-y divide-gray-200">
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={14} className="px-6 py-12 text-center text-gray-500">
                     <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
                     <p className="text-lg font-medium">No customers found</p>
                     <p className="text-sm">Try adjusting your search or add a new customer</p>
@@ -622,6 +626,15 @@ export default function Customers() {
                         ) : (
                           <span className="text-green-600 font-bold bg-green-50 px-2 py-1 rounded">Nil</span>
                         )}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 text-sm">
+                        {customer.branch || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 text-sm font-medium">
+                        {customer.createdBy || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-500 text-xs">
+                        {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('en-IN') : '-'}
                       </td>
                       <td className="py-3 px-4 flex justify-center gap-2">
                         <button
