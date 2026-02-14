@@ -182,9 +182,16 @@ app.post('/api/generate-invoice', (req, res) => {
 // =====================
 // Start Server
 // =====================
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 VK INFOTECH Server running on port ${PORT}`);
-    console.log(`   Address: http://0.0.0.0:${PORT}`);
-    console.log(`   API Health: http://0.0.0.0:${PORT}/api/health`);
-    console.log(`   MongoDB URI: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}`); // Hide password in logs
-});
+// =====================
+// Start Server
+// =====================
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`\n🚀 VK INFOTECH Server running on port ${PORT}`);
+        console.log(`   Address: http://0.0.0.0:${PORT}`);
+        console.log(`   API Health: http://0.0.0.0:${PORT}/api/health`);
+        console.log(`   MongoDB URI: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}`); // Hide password in logs
+    });
+}
+
+module.exports = app;
