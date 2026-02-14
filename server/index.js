@@ -73,6 +73,7 @@ mongoose.connection.on('connected', () => {
 
 mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB connection error:', err);
+    mongoose.connection.lastError = err;
 });
 
 mongoose.connection.on('disconnected', () => {
@@ -104,6 +105,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+        lastError: mongoose.connection.lastError ? mongoose.connection.lastError.message : null,
         timestamp: new Date().toISOString()
     });
 });
