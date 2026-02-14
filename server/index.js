@@ -89,7 +89,7 @@ setInterval(() => {
     }
 }, 60000);
 
-connectDB();
+// connectDB();
 
 // =====================
 // API Routes
@@ -188,6 +188,7 @@ app.post('/api/generate-invoice', (req, res) => {
 // Start Server
 // =====================
 if (require.main === module) {
+    connectDB();
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`\n🚀 VK INFOTECH Server running on port ${PORT}`);
         console.log(`   Address: http://0.0.0.0:${PORT}`);
@@ -196,4 +197,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = app;
+module.exports = { app, connectDB };
