@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: vkinfotech-backend
+    env: node
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && node index.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+    autoDeploy: false
