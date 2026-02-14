@@ -37,19 +37,52 @@ app.use((req, res, next) => {
 // =====================
 // MongoDB Connection
 // =====================
+// =====================
+// MongoDB Connection (Serverless Optimized)
+// =====================
+let cached = global.mongoose;
+
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-    try {
-        await mongoose.connect(MONGO_URI, {
+    if (cached.conn) {
+        console.log('✅ Using cached MongoDB connection');
+        return cached.conn;
+    }
+
+    if (!cached.promise) {
+        const opts = {
             autoIndex: true,
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
-            family: 4 // Use IPv4, skip IPv6
-        });
-        console.log('✅ Connected to MongoDB: vkinfotech');
-        console.log(`   Database: ${MONGO_URI}`);
+            family: 4 // Use IPv4
+        };
 
-        // Ensure requested default users exist
+        console.log('🔄 Creating new MongoDB connection...');
+        cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
+            console.log('✅ Connected to MongoDB: vkinfotech');
+            // Check if default users needed seeding, but only once
+            seedDefaultUsers();
+            return mongoose;
+        });
+    }
+
+    try {
+        cached.conn = await cached.promise;
+    } catch (e) {
+        cached.promise = null;
+        console.error('❌ MongoDB connection error:', e);
+        throw e;
+    }
+
+    return cached.conn;
+};
+
+const seedDefaultUsers = async () => {
+    try {
         const defaultUsers = [
             { id: 'VKINFOTECH', username: 'VKINFOTECH', password: 'VKINFOTECH123', role: 'admin', name: 'VK INFOTECH ADMIN' },
             { id: 'VKINFOTECHSTAFF', username: 'VKINFOTECHSTAFF', password: 'VKINFOTECHSTAFF123', role: 'staff', name: 'VK INFOTECH STAFF' }
@@ -63,11 +96,8 @@ const connectDB = async () => {
             );
         }
         console.log('✅ Custom default users synchronized');
-
     } catch (err) {
-        console.error('❌ MongoDB connection error:', err.message);
-        console.error('   Retrying in 5 seconds...');
-        setTimeout(connectDB, 5000); // Retry connection
+        console.error('❌ Seeding error:', err.message);
     }
 };
 
