@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Backend Server",
+            "program": "${workspaceFolder}/server/index.js",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "env": {
+                "PORT": "5000",
+                "MONGO_URI": "mongodb://localhost:27017/vkinfotech"
+            }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "console": "integratedTerminal"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Full Stack",
+            "configurations": [
+                "Backend Server",
+                "Frontend"
+            ]
+        }
+    ]
+}

@@ -18,6 +18,26 @@
             "savePassword": "secretStorage",
             "readOnly": false,
             "connectionTimeout": 30
+        },
+        {
+            "connectionId": "SUI-TF9n4DNxwZeN1XWjJ",
+            "name": "vkinfotech",
+            "driver": "mysql",
+            "connectionType": "socket",
+            "socket": "/var/run/mysqld/mysqld.sock",
+            "username": "sanjay",
+            "password": "",
+            "savePassword": "secretStorage",
+            "readOnly": false,
+            "postConnectionSqlType": "inline",
+            "pinnedConnectionTimeout": "0",
+            "driverOptions": {
+                "retrievePublickey": true,
+                "disableMultiStatements": false
+            },
+            "introspection": {
+                "progressive": false
+            }
         }
     ]
 }

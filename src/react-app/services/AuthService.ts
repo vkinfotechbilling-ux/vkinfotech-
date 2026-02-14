@@ -13,6 +13,7 @@ class AuthService {
     private API_URL = `${CONFIG.API_BASE_URL}/auth`;
 
     async login(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+        console.log(`🔐 Attempting login for user: ${username} at URL: ${this.API_URL}/login`);
         try {
             const response = await fetch(`${this.API_URL}/login`, {
                 method: 'POST',

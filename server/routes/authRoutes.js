@@ -6,7 +6,7 @@ const User = require('../models/User');
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        console.log(`🔹 Login Attempt: Username="${username}", PasswordLength=${password ? password.length : 0}`);
+        console.log(`🔹 Login Attempt: Username="${username}", Origin="${req.get('Origin')}"`);
 
         if (!username || !password) {
             console.warn('❌ Login Failed: Missing username or password');

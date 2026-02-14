@@ -11,3 +11,5 @@ export const CONFIG = {
             ? 'http://localhost:5000/api'
             : '/api')
 };
+
+console.log('🔌 Configured API Base URL:', CONFIG.API_BASE_URL);

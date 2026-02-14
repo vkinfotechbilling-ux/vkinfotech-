@@ -23,6 +23,12 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/vkinfotech
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`📨 ${req.method} ${req.originalUrl} - Origin: ${req.get('Origin')} - IP: ${req.ip}`);
+    next();
+});
+
 // =====================
 // MongoDB Connection
 // =====================
