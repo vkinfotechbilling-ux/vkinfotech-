@@ -1,3 +1,9 @@
-const app = require('../server/index.js');
+const { app, connectDB } = require('../server/index.js');
 
-module.exports = app;
+module.exports = async (req, res) => {
+    // Ensure DB is connected before handling request
+    await connectDB();
+
+    // Vercel serverless function signature match
+    return app(req, res);
+};
