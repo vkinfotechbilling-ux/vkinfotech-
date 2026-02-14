@@ -25,6 +25,7 @@
     "react-dom": "19.0.0",
     "react-router": "^7.5.3",
     "recharts": "^3.7.0",
+    "serve": "^14.2.5",
     "xlsx": "^0.18.5",
     "zod": "^3.24.3"
   },
@@ -59,6 +60,8 @@
     "dev:all": "concurrently --kill-others \"npm run dev\" \"npm run server\"",
     "knip": "knip",
     "lint": "eslint .",
-    "server": "cd server && node index.js"
+    "start": "node server.js",
+    "preview": "serve -s dist",
+    "server": "node server.js"
   }
 }
