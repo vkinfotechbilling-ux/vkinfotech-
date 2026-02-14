@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import Layout from "@/react-app/components/Layout";
 import Dashboard from "@/react-app/pages/Dashboard";
 import Billing from "@/react-app/pages/Billing";
@@ -8,7 +8,8 @@ import Customers from "@/react-app/pages/Customers";
 import CustomerBillList from "@/react-app/pages/CustomerBillList";
 import InvoiceView from "@/react-app/pages/InvoiceView";
 import Reports from "@/react-app/pages/Reports";
-import Login from "@/react-app/pages/Login";
+import Reports from "@/react-app/pages/Reports";
+// import Login from "@/react-app/pages/Login";
 import ProtectedRoute from "@/react-app/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/react-app/components/GlobalErrorBoundary";
 
@@ -18,7 +19,8 @@ export default function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            {/* <Route path="/login" element={<Login />} /> */}
+            <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Dashboard />

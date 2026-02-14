@@ -7,7 +7,13 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-    const user = authService.getCurrentUser();
+    // TEMPORARY: Bypass login for testing
+    const user = authService.getCurrentUser() || {
+        id: 'TEMP_ADMIN',
+        username: 'VKINFOTECH',
+        role: 'admin',
+        name: 'VK INFOTECH (Temp)'
+    };
 
     if (!user) {
         return <Navigate to="/login" replace />;
