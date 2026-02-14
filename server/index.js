@@ -32,9 +32,6 @@ app.use((req, res, next) => {
 // =====================
 // MongoDB Connection
 // =====================
-// =====================
-// MongoDB Connection
-// =====================
 const connectDB = async () => {
     try {
         await mongoose.connect(MONGO_URI, {
@@ -182,8 +179,12 @@ app.post('/api/generate-invoice', (req, res) => {
 // =====================
 // Start Server
 // =====================
-app.listen(PORT, () => {
-    console.log(`\n🚀 VK INFOTECH Server running on http://localhost:${PORT}`);
-    console.log(`   API Health: http://localhost:${PORT}/api/health`);
-    console.log(`   MongoDB: ${MONGO_URI}\n`);
+// =====================
+// Start Server
+// =====================
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🚀 VK INFOTECH Server running on port ${PORT}`);
+    console.log(`   Address: http://0.0.0.0:${PORT}`);
+    console.log(`   API Health: http://0.0.0.0:${PORT}/api/health`);
+    console.log(`   MongoDB URI: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}`); // Hide password in logs
 });
