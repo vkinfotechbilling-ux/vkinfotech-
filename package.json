@@ -60,8 +60,8 @@
     "dev:all": "concurrently --kill-others \"npm run dev\" \"npm run server\"",
     "knip": "knip",
     "lint": "eslint .",
-    "start": "node server.js",
+    "start": "node server.cjs",
     "preview": "serve -s dist",
-    "server": "node server.js"
+    "server": "node server.cjs"
   }
 }
