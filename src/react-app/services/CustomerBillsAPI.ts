@@ -7,7 +7,7 @@
  * DO NOT use this for creating or editing bills - use BillingAPI instead.
  */
 
-import { CONFIG } from '../config';
+import { supabase } from '../lib/supabaseClient';
 
 export interface CustomerBill {
     id: string;
@@ -28,19 +28,42 @@ export interface CustomerBill {
     createdBy?: string;
 }
 
-const API_URL = CONFIG.API_BASE_URL;
+// Helper to convert snake_case DB row to camelCase CustomerBill
+function toBill(row: any): CustomerBill {
+    return {
+        id: row.id,
+        invoiceNumber: row.invoice_number,
+        customerId: row.customer_id || '',
+        date: row.date,
+        time: row.time || '',
+        amount: row.amount || 0,
+        paidAmount: row.paid_amount || 0,
+        balance: row.balance || 0,
+        paymentMode: row.payment_mode || 'Cash',
+        customerName: row.customer_name || '',
+        customerPhone: row.customer_phone || '',
+        customerAddress: row.customer_address || '',
+        dueDate: row.due_date || '',
+        products: row.products || [],
+        branch: row.branch,
+        createdBy: row.created_by
+    };
+}
 
 export const CustomerBillsAPI = {
     /**
      * Fetch all bills for a specific customer
-     * @param customerId - Customer ID
-     * @returns Array of customer bills
      */
     getCustomerBills: async (customerId: string): Promise<CustomerBill[]> => {
         try {
-            const response = await fetch(`${API_URL}/invoices/customer/${customerId}`);
-            if (!response.ok) throw new Error('Failed to fetch customer invoices');
-            return await response.json();
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .eq('customer_id', customerId)
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            return (data || []).map(toBill);
         } catch (error) {
             console.error('Error fetching customer bills:', error);
             return [];
@@ -49,14 +72,17 @@ export const CustomerBillsAPI = {
 
     /**
      * Fetch a single bill by invoice ID
-     * @param invoiceId - Invoice ID
-     * @returns Single customer bill or null
      */
     getCustomerBill: async (invoiceId: string): Promise<CustomerBill | null> => {
         try {
-            const response = await fetch(`${API_URL}/invoices/${invoiceId}`);
-            if (!response.ok) return null;
-            return await response.json();
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .eq('id', invoiceId)
+                .single();
+
+            if (error || !data) return null;
+            return toBill(data);
         } catch (error) {
             console.error('Error fetching customer bill:', error);
             return null;
@@ -65,14 +91,35 @@ export const CustomerBillsAPI = {
 
     /**
      * Get customer information by ID
-     * @param customerId - Customer ID
-     * @returns Customer object or null
      */
     getCustomer: async (customerId: string): Promise<any> => {
         try {
-            const response = await fetch(`${API_URL}/customers/${customerId}`);
-            if (!response.ok) return null;
-            return await response.json();
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('id', customerId)
+                .single();
+
+            if (error || !data) return null;
+
+            // Convert to camelCase
+            return {
+                id: data.id,
+                name: data.name,
+                phone: data.phone,
+                address: data.address,
+                email: data.email,
+                gstin: data.gstin,
+                customerType: data.customer_type,
+                status: data.status,
+                totalPurchases: data.total_purchases,
+                totalOrders: data.total_orders,
+                lastPurchaseDate: data.last_purchase_date,
+                createdAt: data.created_at,
+                updatedAt: data.updated_at,
+                branch: data.branch,
+                createdBy: data.created_by
+            };
         } catch (error) {
             console.error('Error fetching customer:', error);
             return null;
@@ -81,13 +128,16 @@ export const CustomerBillsAPI = {
 
     /**
      * Fetch all invoices (for admin/summary views)
-     * @returns Array of all invoices
      */
     getAllInvoices: async (): Promise<CustomerBill[]> => {
         try {
-            const response = await fetch(`${API_URL}/invoices`);
-            if (!response.ok) throw new Error('Failed to fetch invoices');
-            return await response.json();
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            return (data || []).map(toBill);
         } catch (error) {
             console.error('Error fetching all invoices:', error);
             return [];
@@ -96,11 +146,8 @@ export const CustomerBillsAPI = {
 
     /**
      * Calculate customer statistics
-     * @param customerId - Customer ID
-     * @returns Customer statistics
      */
     getCustomerStats: async (customerId: string) => {
-        // Since we don't have a stats endpoint yet, we fetch all bills and calculate
         const bills = await CustomerBillsAPI.getCustomerBills(customerId);
 
         const totalPurchases = bills.reduce((sum, bill) => sum + bill.amount, 0);

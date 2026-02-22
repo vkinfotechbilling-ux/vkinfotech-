@@ -6,7 +6,11 @@ export default function ProductReports() {
     const [topProducts, setTopProducts] = useState<any[]>([]);
 
     useEffect(() => {
-        setTopProducts(reportService.getTopSellingProducts());
+        const fetchData = async () => {
+            const data = await reportService.getTopSellingProducts();
+            setTopProducts(data);
+        };
+        fetchData();
     }, []);
 
     return (

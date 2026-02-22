@@ -7,9 +7,11 @@ export default function SalesReports() {
     const [salesData, setSalesData] = useState<any[]>([]);
 
     useEffect(() => {
-        // Determine last 30 days or similar
-        const data = reportService.getSalesReport({});
-        setSalesData(data);
+        const fetchData = async () => {
+            const data = await reportService.getSalesReport({});
+            setSalesData(data);
+        };
+        fetchData();
     }, []);
 
     return (

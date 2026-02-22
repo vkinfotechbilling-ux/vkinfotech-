@@ -1,4 +1,4 @@
-import { CONFIG } from '../config';
+import { supabase } from '../lib/supabaseClient';
 
 export interface User {
     id: string;
@@ -10,46 +10,45 @@ export interface User {
 
 class AuthService {
     private USER_KEY = 'user';
-    private API_URL = `${CONFIG.API_BASE_URL}/auth`;
 
     async login(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
-        console.log(`🔐 Attempting login for user: ${username} at URL: ${this.API_URL}/login`);
+        console.log(`🔐 Attempting login for user: ${username} via Supabase`);
         try {
-            const response = await fetch(`${this.API_URL}/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, username, password, role, name, branch')
+                .eq('username', username)
+                .single();
 
-            if (!response.ok) {
-                let errorMessage = 'Login failed';
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || 'Login failed';
-                } catch (e) {
-                    // unexpected non-json error
-                    errorMessage = `Server Error (${response.status})`;
-                }
-                console.error('Login failed:', errorMessage);
-                return { success: false, error: errorMessage };
+            if (error || !data) {
+                console.error('Login failed: User not found');
+                return { success: false, error: 'Invalid username or password' };
             }
 
-            const user: User = await response.json();
+            // Simple password check (plain text as in original)
+            if (data.password !== password) {
+                console.error('Login failed: Incorrect password');
+                return { success: false, error: 'Invalid username or password' };
+            }
+
+            const user: User = {
+                id: data.id,
+                username: data.username,
+                role: data.role,
+                name: data.name,
+                branch: data.branch
+            };
+
             localStorage.setItem(this.USER_KEY, JSON.stringify(user));
             return { success: true, user };
         } catch (error) {
-            console.error('Login network error:', error);
-            return { success: false, error: 'Network Error: Unable to reach server. Please check your connection.' };
+            console.error('Login error:', error);
+            return { success: false, error: 'Network Error: Unable to reach Supabase. Please check your connection.' };
         }
     }
 
     logout() {
         localStorage.removeItem(this.USER_KEY);
-        // We use window.location.reload() or navigate in the component, 
-        // but here we just clear storage.
-        // If we want to force redirect:
         window.location.href = '/login';
     }
 

@@ -6,7 +6,11 @@ export default function FinancialReports() {
     const [financials, setFinancials] = useState<any>({ totalGST: 0, netRevenue: 0 });
 
     useEffect(() => {
-        setFinancials(reportService.getFinancialSummary());
+        const fetchData = async () => {
+            const data = await reportService.getFinancialSummary();
+            setFinancials(data);
+        };
+        fetchData();
     }, []);
 
     const pieData = [

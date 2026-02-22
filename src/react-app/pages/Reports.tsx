@@ -20,8 +20,11 @@ export default function Reports() {
     });
 
     useEffect(() => {
-        // Initial fetch
-        setSummaryData(reportService.getSummaryMetrics());
+        const fetchData = async () => {
+            const data = await reportService.getSummaryMetrics();
+            setSummaryData(data);
+        };
+        fetchData();
     }, []);
 
     const tabs = [

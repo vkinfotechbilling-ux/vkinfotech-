@@ -64,7 +64,9 @@ export default function Products() {
     status: 'Active' as 'Active' | 'Inactive',
     serialNumber: '',
     model: '',
-    warranty: ''
+    warranty: '',
+    gstRate: '0',
+    hsnCode: ''
   });
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
 
@@ -103,7 +105,9 @@ export default function Products() {
       status: 'Active',
       serialNumber: '',
       model: '',
-      warranty: ''
+      warranty: '',
+      gstRate: '0',
+      hsnCode: ''
     });
     setFormErrors({});
     setShowAddModal(true);
@@ -123,7 +127,9 @@ export default function Products() {
       status: product.status,
       serialNumber: product.serialNumber || '',
       model: product.model || '',
-      warranty: product.warranty || ''
+      warranty: product.warranty || '',
+      gstRate: (product.gstRate || 0).toString(),
+      hsnCode: product.hsnCode || ''
     });
     setFormErrors({});
     setShowAddModal(true);
@@ -199,6 +205,8 @@ export default function Products() {
         serialNumber: formData.serialNumber,
         model: formData.model,
         warranty: formData.warranty,
+        gstRate: parseFloat(formData.gstRate),
+        hsnCode: formData.hsnCode,
         updatedAt: new Date().toISOString().split('T')[0]
       });
 
@@ -227,7 +235,9 @@ export default function Products() {
         status: formData.status,
         serialNumber: formData.serialNumber,
         model: formData.model,
-        warranty: formData.warranty
+        warranty: formData.warranty,
+        gstRate: parseFloat(formData.gstRate),
+        hsnCode: formData.hsnCode
       });
 
       if (newProduct) {
@@ -245,7 +255,9 @@ export default function Products() {
           status: 'Active',
           serialNumber: '',
           model: '',
-          warranty: ''
+          warranty: '',
+          gstRate: '0',
+          hsnCode: ''
         });
         setTimeout(() => {
           setIsAddSuccess(false);
@@ -335,6 +347,14 @@ export default function Products() {
           >
             <FileSpreadsheet size={20} />
             Excel
+          </button>
+          <button
+            onClick={() => loadProducts()}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-lg transition-all hover:scale-105"
+            title="Refresh Data"
+          >
+            <Clock size={20} />
+            Refresh
           </button>
           <button
             onClick={handleAddProduct}
@@ -475,8 +495,35 @@ export default function Products() {
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="text-center py-8 text-gray-500">
-                    No products found
+                  <td colSpan={11} className="text-center py-12 bg-gray-50/50">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="p-3 bg-gray-100 rounded-full mb-3">
+                        <Package size={32} className="text-gray-400" />
+                      </div>
+                      <p className="text-gray-800 font-bold text-lg">
+                        {searchTerm || filterCategory || filterBrand || filterStatus
+                          ? 'No products match your filters'
+                          : 'Your inventory is currently empty'}
+                      </p>
+                      <p className="text-gray-500 max-w-xs mt-1">
+                        {searchTerm || filterCategory || filterBrand || filterStatus
+                          ? 'Try adjusting your search or filters to find what you are looking for.'
+                          : 'Get started by adding your first product to the inventory.'}
+                      </p>
+                      {(searchTerm || filterCategory || filterBrand || filterStatus) && (
+                        <button
+                          onClick={() => {
+                            setSearchTerm('');
+                            setFilterCategory('');
+                            setFilterBrand('');
+                            setFilterStatus('');
+                          }}
+                          className="mt-4 text-green-600 font-bold hover:underline"
+                        >
+                          Clear All Filters
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -714,6 +761,26 @@ export default function Products() {
                         onChange={(e) => setFormData({ ...formData, warranty: e.target.value })}
                         className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
                         placeholder="e.g. 1 Year"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">GST Rate (%)</label>
+                      <input
+                        type="number"
+                        value={formData.gstRate}
+                        onChange={(e) => setFormData({ ...formData, gstRate: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-2">HSN Code</label>
+                      <input
+                        type="text"
+                        value={formData.hsnCode}
+                        onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="HSN Code"
                       />
                     </div>
                   </div>

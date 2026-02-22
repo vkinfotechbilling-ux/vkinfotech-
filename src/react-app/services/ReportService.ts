@@ -1,15 +1,12 @@
+import { supabase } from '../lib/supabaseClient';
 import { type Invoice, type Customer, type Product } from '../types';
-
-// Redefining types based on Billing.tsx usage for independence, or I can check types.ts
-// Let's check shared/types.ts first in the next step, but for now I'll implement with generic 'any' or defined interfaces then align.
-// Actually, I'll define the interfaces used in the service right here to be self-contained for now or import if I find them.
 
 export interface ReportSummary {
     totalSales: number;
     totalRevenue: number;
     totalOrders: number;
     totalCustomers: number;
-    profit: number; // Placeholder calculation
+    profit: number;
     stockValue: number;
 }
 
@@ -21,56 +18,115 @@ export interface SalesReportParams {
 }
 
 export class ReportService {
-    private getInvoices(): Invoice[] {
+    private async getInvoices(): Promise<Invoice[]> {
         try {
-            return JSON.parse(localStorage.getItem('invoices') || '[]');
-        } catch {
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+
+            return (data || []).map((row: any) => ({
+                id: row.id,
+                invoiceNumber: row.invoice_number,
+                customerId: row.customer_id || '',
+                date: row.date,
+                time: row.time || '',
+                amount: row.amount || 0,
+                paidAmount: row.paid_amount || 0,
+                balance: row.balance || 0,
+                paymentMode: row.payment_mode || 'Cash',
+                products: row.products || [],
+                customerName: row.customer_name || '',
+                customerPhone: row.customer_phone || '',
+                customerAddress: row.customer_address || ''
+            }));
+        } catch (error) {
+            console.error('Error fetching invoices for reports:', error);
             return [];
         }
     }
 
-    private getCustomers(): Customer[] {
+    private async getCustomers(): Promise<Customer[]> {
         try {
-            return JSON.parse(localStorage.getItem('customers') || '[]');
-        } catch {
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*');
+
+            if (error) throw error;
+
+            return (data || []).map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                phone: row.phone,
+                address: row.address || '',
+                email: row.email || '',
+                customerType: row.customer_type || 'Retail',
+                status: row.status || 'Active',
+                totalPurchases: row.total_purchases || 0,
+                totalOrders: row.total_orders || 0,
+                lastPurchaseDate: row.last_purchase_date || '',
+                createdAt: row.created_at || '',
+                updatedAt: row.updated_at || ''
+            }));
+        } catch (error) {
+            console.error('Error fetching customers for reports:', error);
             return [];
         }
     }
 
-    // Helper to fetch products is tricky because Billing.tsx has them hardcoded in the component.
-    // I should probably move the hardcoded products to a shared constant or localStorage if they aren't there.
-    // Inspection of Billing.tsx showed `availableProducts` hardcoded.
-    // BUT the invoice saves the product details at time of sale.
-    // For Stock Reports, I might need the current product list. Assumed to be in 'products' key if managed, but Billing.tsx holds them.
-    // I will assume for now we only have what's in invoices or customers, and I might need to extract unique products from invoices 
-    // OR the user might have a Products page that saves them. 
-    // Let's check Products.tsx content later. 
-    // For now I will focus on Invoice/Customer derived data.
+    private async getProducts(): Promise<Product[]> {
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*');
 
-    // NOTE: In a real app, this would be API calls.
+            if (error) throw error;
 
-    getSummaryMetrics(): ReportSummary {
-        const invoices = this.getInvoices();
-        const customers = this.getCustomers();
+            return (data || []).map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                brand: row.brand || '',
+                category: row.category || '',
+                description: row.description || '',
+                price: row.price || 0,
+                stock: row.stock || 0,
+                minStock: row.min_stock || 0,
+                unit: row.unit || 'pcs',
+                status: row.status || 'Active',
+                serialNumber: row.serial_number || '',
+                warranty: row.warranty || '',
+                model: row.model || '',
+                gstRate: row.gst_rate || 0,
+                hsnCode: row.hsn_code || '',
+                createdAt: row.created_at || '',
+                updatedAt: row.updated_at || '',
+                branch: row.branch,
+                createdBy: row.created_by
+            }));
+        } catch (error) {
+            console.error('Error fetching products for reports:', error);
+            return [];
+        }
+    }
+
+    async getSummaryMetrics(): Promise<ReportSummary> {
+        const [invoices, customers, products] = await Promise.all([
+            this.getInvoices(),
+            this.getCustomers(),
+            this.getProducts()
+        ]);
 
         const totalSales = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
         const totalOrders = invoices.length;
         const totalCustomers = customers.length;
-
-        // Profit placeholder: assuming 20% margin for now as we don't have cost price in schema yet
         const profit = totalSales * 0.2;
-
-        // Stock value - strict dependency on a Products source. 
-        // I'll try to read 'products' from localStorage, assuming the Products page saves there.
-        let stockValue = 0;
-        try {
-            const products: Product[] = JSON.parse(localStorage.getItem('products') || '[]');
-            stockValue = products.reduce((sum: number, p: Product) => sum + ((p.price || 0) * (p.stock || 0)), 0);
-        } catch { }
+        const stockValue = products.reduce((sum, p) => sum + ((p.price || 0) * (p.stock || 0)), 0);
 
         return {
             totalSales,
-            totalRevenue: totalSales, // Revenue ≈ Sales for this context usually
+            totalRevenue: totalSales,
             totalOrders,
             totalCustomers,
             profit,
@@ -78,10 +134,9 @@ export class ReportService {
         };
     }
 
-    getSalesReport(params: SalesReportParams) {
-        let invoices = this.getInvoices();
+    async getSalesReport(params: SalesReportParams) {
+        let invoices = await this.getInvoices();
 
-        // Filters
         if (params.startDate) {
             invoices = invoices.filter(inv => new Date(inv.date) >= params.startDate!);
         }
@@ -89,12 +144,8 @@ export class ReportService {
             invoices = invoices.filter(inv => new Date(inv.date) <= params.endDate!);
         }
 
-        // Aggregate by Date
         const salesByDate: Record<string, number> = {};
         invoices.forEach(inv => {
-            // inv.date is localized string "dd/mm/yyyy" or similar from Billing.tsx?
-            // Billing.tsx: new Date().toLocaleDateString('en-IN') -> "dd/mm/yyyy"
-            // Need to parse correctly.
             const date = inv.date;
             salesByDate[date] = (salesByDate[date] || 0) + inv.amount;
         });
@@ -102,8 +153,8 @@ export class ReportService {
         return Object.entries(salesByDate).map(([date, amount]) => ({ date, amount }));
     }
 
-    getTopSellingProducts() {
-        const invoices = this.getInvoices();
+    async getTopSellingProducts() {
+        const invoices = await this.getInvoices();
         const productSales: Record<string, number> = {};
 
         invoices.forEach(inv => {
@@ -120,17 +171,14 @@ export class ReportService {
             .slice(0, 5);
     }
 
-    getRecentTransactions() {
-        const invoices = this.getInvoices();
-        return invoices.slice(-5).reverse();
+    async getRecentTransactions() {
+        const invoices = await this.getInvoices();
+        return invoices.slice(0, 5);
     }
 
-    // Financials
-    getFinancialSummary() {
-        const invoices = this.getInvoices();
+    async getFinancialSummary() {
+        const invoices = await this.getInvoices();
         const totalGST = invoices.reduce((sum, inv) => {
-            // Re-calculate GST from amount if not saved explicitly, but Billing.tsx saves 'grandTotal' which includes GST.
-            // Formula in Billing: subtotal * 1.18 = grandTotal => GST = grandTotal - (grandTotal / 1.18)
             const gstComponent = inv.amount - (inv.amount / 1.18);
             return sum + gstComponent;
         }, 0);

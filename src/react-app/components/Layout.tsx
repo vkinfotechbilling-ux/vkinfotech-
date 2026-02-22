@@ -62,6 +62,7 @@ export default function Layout({ children }: LayoutProps) {
   }, []);
 
   const navigate = useNavigate();
+  // TEMPORARY: Removed bypass - using real auth state
   const user = authService.getCurrentUser();
 
   const handleLogout = () => {
@@ -94,8 +95,8 @@ export default function Layout({ children }: LayoutProps) {
         <div className="p-6 border-b border-slate-800">
           <div className={`flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
             {sidebarOpen && (
-              <div className="flex flex-col animate-in fade-in slide-in-from-left duration-500">
-                <h1 className="text-2xl font-bold text-green-400 bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent company-name-font">{user?.branch || 'VK INFOTECH'}</h1>
+              <div className="flex flex-col animate-in fade-in slide-in-from-left duration-500 overflow-hidden">
+                <h1 className="text-2xl font-bold text-green-400 bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent company-name-font whitespace-nowrap">{user?.branch || 'VK INFOTECH'}</h1>
               </div>
             )}
             <button
@@ -106,7 +107,7 @@ export default function Layout({ children }: LayoutProps) {
             </button>
           </div>
           {sidebarOpen && (
-            <p className="text-xs text-gray-400 mt-1 animate-in fade-in slide-in-from-bottom duration-700 company-name-font">Billing & Inventory System</p>
+            <p className="text-xs text-gray-400 mt-1 animate-in fade-in slide-in-from-bottom duration-700 company-name-font whitespace-nowrap">Billing & Inventory System</p>
           )}
         </div>
 
@@ -127,8 +128,8 @@ export default function Layout({ children }: LayoutProps) {
                   animationDelay: `${index * 50}ms`
                 }}
               >
-                <Icon size={20} className={isActive ? 'drop-shadow-lg' : ''} />
-                {sidebarOpen && <span className="font-medium company-name-font">{item.label}</span>}
+                <Icon size={20} className={isActive ? 'drop-shadow-lg shrink-0' : 'shrink-0'} />
+                {sidebarOpen && <span className="font-medium company-name-font whitespace-nowrap">{item.label}</span>}
               </Link>
             );
           })}

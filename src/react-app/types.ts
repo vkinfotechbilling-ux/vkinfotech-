@@ -85,9 +85,20 @@ export interface Product {
     id: string;
     name: string;
     brand: string;
+    category: string;
+    description: string;
     price: number;
     stock: number;
-    category: string;
-    gstRate: number;
-    hsnCode: string;
+    minStock: number;
+    unit: string;
+    status: 'Active' | 'Inactive';
+    serialNumber?: string;
+    warranty?: string;
+    model?: string;
+    gstRate?: number;
+    hsnCode?: string;
+    createdAt: string;
+    updatedAt: string;
+    branch?: string;
+    createdBy?: string;
 }
