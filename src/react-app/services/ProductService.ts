@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { authService } from './AuthService';
 import { type Product } from '../types';
+export type { Product };
 
 // Helper to convert snake_case DB row to camelCase Product
 function toProduct(row: any): Product {

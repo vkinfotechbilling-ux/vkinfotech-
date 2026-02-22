@@ -497,7 +497,7 @@ export default function Stock() {
       return acc;
     }, {} as Record<string, { count: number; totalStock: number; totalValue: number }>);
 
-    const categoryData = Object.entries(categoryStats).map(([category, stats]) => ({
+    const categoryData = Object.entries(categoryStats).map(([category, stats]: [string, { count: number; totalStock: number; totalValue: number }]) => ({
       'Category': category,
       'Products': stats.count,
       'Total Stock': stats.totalStock,
