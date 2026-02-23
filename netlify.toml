@@ -1,7 +1,7 @@
 # Netlify configuration for SPA routing
 [build]
   publish = "dist"
-  command = "npm run build"
+  command = "tsc -b && vite build"
 
 # Redirect all routes to index.html for client-side routing
 [[redirects]]
